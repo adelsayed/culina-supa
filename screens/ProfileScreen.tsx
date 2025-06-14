@@ -85,6 +85,22 @@ export default function ProfileScreen() {
     }
   }, [profile, isEditing]);
 
+  // Pre-populate health data when modal opens
+  React.useEffect(() => {
+    if (showHealthModal && profile) {
+      setHealthData({
+        age: profile.age?.toString() || '',
+        weight: profile.weight?.toString() || '',
+        height: profile.height?.toString() || '',
+        gender: profile.gender || 'prefer_not_to_say',
+        activityLevel: profile.activityLevel || 'moderately_active',
+        weightGoal: profile.weightGoal || 'maintain',
+        targetWeight: profile.targetWeight?.toString() || '',
+        dailyCalorieTarget: profile.dailyCalorieTarget?.toString() || '',
+      });
+    }
+  }, [showHealthModal, profile]);
+
   const handleEdit = () => {
     setIsEditing(true);
     setEditedProfile({
@@ -246,8 +262,18 @@ export default function ProfileScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Health Summary</Text>
-            <View style={styles.completionBadge}>
-              <Text style={styles.completionText}>{getProfileCompleteness()}% Complete</Text>
+            <View style={styles.headerRight}>
+              <View style={styles.completionBadge}>
+                <Text style={styles.completionText}>{getProfileCompleteness()}% Complete</Text>
+              </View>
+              {isHealthProfileComplete() && (
+                <TouchableOpacity
+                  style={styles.editHealthButton}
+                  onPress={() => setShowHealthModal(true)}
+                >
+                  <Ionicons name="create-outline" size={16} color="#007AFF" />
+                </TouchableOpacity>
+              )}
             </View>
           </View>
           
@@ -1110,5 +1136,15 @@ const styles = StyleSheet.create({
     color: '#666',
     textAlign: 'center',
     marginTop: 4,
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  editHealthButton: {
+    padding: 6,
+    borderRadius: 16,
+    backgroundColor: '#f0f8ff',
   },
 });
