@@ -9,7 +9,8 @@ import {
   TextInput,
   Switch,
   Alert,
-  SafeAreaView
+  SafeAreaView,
+  Modal
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../lib/AuthContext';
@@ -41,10 +42,18 @@ export default function ProfileScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [showHealthModal, setShowHealthModal] = useState(false);
   const [editedProfile, setEditedProfile] = useState({
     displayName: '',
     username: '',
     bio: '',
+  });
+  const [healthData, setHealthData] = useState({
+    age: '',
+    weight: '',
+    height: '',
+    gender: 'prefer_not_to_say' as 'male' | 'female' | 'other' | 'prefer_not_to_say',
+    activityLevel: 'moderately_active' as 'sedentary' | 'lightly_active' | 'moderately_active' | 'very_active' | 'extremely_active',
   });
 
   // Always call hooks before any return
@@ -139,6 +148,35 @@ export default function ProfileScreen() {
     await updateProfile({ [key]: value });
   };
 
+  const handleSaveHealthData = async () => {
+    if (!healthData.age || !healthData.weight || !healthData.height) {
+      Alert.alert('Missing Information', 'Please fill in age, weight, and height.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const success = await updateProfile({
+        age: parseInt(healthData.age),
+        weight: parseFloat(healthData.weight),
+        height: parseFloat(healthData.height),
+        gender: healthData.gender,
+        activityLevel: healthData.activityLevel,
+      });
+
+      if (success) {
+        setShowHealthModal(false);
+        Alert.alert('Success', 'Health data saved successfully!');
+      } else {
+        Alert.alert('Error', 'Failed to save health data.');
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to save health data.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (profileLoading) {
     return (
       <SafeAreaView style={styles.container}>
@@ -231,14 +269,7 @@ export default function ProfileScreen() {
               </Text>
               <TouchableOpacity
                 style={styles.completeButton}
-                onPress={() => {
-                  // For now, we'll show an alert. In a real app, this would navigate to HealthDataScreen
-                  Alert.alert(
-                    'Health Data Setup',
-                    'Navigate to Health Data screen to complete your profile setup.',
-                    [{ text: 'OK', style: 'default' }]
-                  );
-                }}
+                onPress={() => setShowHealthModal(true)}
               >
                 <Text style={styles.completeButtonText}>Add Health Data</Text>
               </TouchableOpacity>
@@ -383,6 +414,130 @@ export default function ProfileScreen() {
           </View>
         )}
       </ScrollView>
+
+      {/* Health Data Modal */}
+      <Modal
+        visible={showHealthModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+      >
+        <SafeAreaView style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <TouchableOpacity onPress={() => setShowHealthModal(false)}>
+              <Text style={styles.modalCancel}>Cancel</Text>
+            </TouchableOpacity>
+            <Text style={styles.modalTitle}>Health Data</Text>
+            <TouchableOpacity onPress={handleSaveHealthData} disabled={loading}>
+              <Text style={[styles.modalSave, loading && styles.modalSaveDisabled]}>
+                {loading ? 'Saving...' : 'Save'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+          
+          <ScrollView style={styles.modalContent}>
+            <View style={styles.modalSection}>
+              <Text style={styles.modalSectionTitle}>Basic Information</Text>
+              
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Age</Text>
+                <TextInput
+                  style={styles.input}
+                  value={healthData.age}
+                  onChangeText={(text) => setHealthData({ ...healthData, age: text })}
+                  placeholder="Enter your age"
+                  keyboardType="numeric"
+                />
+              </View>
+
+              <View style={styles.inputRow}>
+                <View style={styles.inputHalf}>
+                  <Text style={styles.label}>Weight ({profile?.preferredUnits === 'metric' ? 'kg' : 'lbs'})</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={healthData.weight}
+                    onChangeText={(text) => setHealthData({ ...healthData, weight: text })}
+                    placeholder={profile?.preferredUnits === 'metric' ? '70' : '154'}
+                    keyboardType="numeric"
+                  />
+                </View>
+                <View style={styles.inputHalf}>
+                  <Text style={styles.label}>Height ({profile?.preferredUnits === 'metric' ? 'cm' : 'inches'})</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={healthData.height}
+                    onChangeText={(text) => setHealthData({ ...healthData, height: text })}
+                    placeholder={profile?.preferredUnits === 'metric' ? '175' : '69'}
+                    keyboardType="numeric"
+                  />
+                </View>
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Gender</Text>
+                <View style={styles.optionGrid}>
+                  {[
+                    { value: 'male', label: 'Male' },
+                    { value: 'female', label: 'Female' },
+                    { value: 'other', label: 'Other' },
+                    { value: 'prefer_not_to_say', label: 'Prefer not to say' },
+                  ].map((option) => (
+                    <TouchableOpacity
+                      key={option.value}
+                      style={[
+                        styles.optionButton,
+                        healthData.gender === option.value && styles.selectedOption
+                      ]}
+                      onPress={() => setHealthData({ ...healthData, gender: option.value as any })}
+                    >
+                      <Text style={[
+                        styles.optionText,
+                        healthData.gender === option.value && styles.selectedOptionText
+                      ]}>
+                        {option.label}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Activity Level</Text>
+                <View style={styles.activityOptions}>
+                  {[
+                    { value: 'sedentary', label: 'Sedentary', desc: 'Little or no exercise' },
+                    { value: 'lightly_active', label: 'Lightly Active', desc: 'Light exercise 1-3 days/week' },
+                    { value: 'moderately_active', label: 'Moderately Active', desc: 'Moderate exercise 3-5 days/week' },
+                    { value: 'very_active', label: 'Very Active', desc: 'Hard exercise 6-7 days/week' },
+                    { value: 'extremely_active', label: 'Extremely Active', desc: 'Very hard exercise, physical job' },
+                  ].map((level) => (
+                    <TouchableOpacity
+                      key={level.value}
+                      style={[
+                        styles.activityOption,
+                        healthData.activityLevel === level.value && styles.selectedActivityOption
+                      ]}
+                      onPress={() => setHealthData({ ...healthData, activityLevel: level.value as any })}
+                    >
+                      <View style={styles.activityContent}>
+                        <Text style={[
+                          styles.activityLabel,
+                          healthData.activityLevel === level.value && styles.selectedActivityLabel
+                        ]}>
+                          {level.label}
+                        </Text>
+                        <Text style={styles.activityDescription}>{level.desc}</Text>
+                      </View>
+                      {healthData.activityLevel === level.value && (
+                        <Ionicons name="checkmark-circle" size={20} color="#007AFF" />
+                      )}
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+            </View>
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -660,5 +815,113 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  // Modal Styles
+  modalContainer: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  modalCancel: {
+    fontSize: 16,
+    color: '#666',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  modalSave: {
+    fontSize: 16,
+    color: '#007AFF',
+    fontWeight: '600',
+  },
+  modalSaveDisabled: {
+    color: '#ccc',
+  },
+  modalContent: {
+    flex: 1,
+  },
+  modalSection: {
+    padding: 20,
+  },
+  modalSectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 16,
+  },
+  inputRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  inputHalf: {
+    flex: 1,
+    marginHorizontal: 4,
+  },
+  optionGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  optionButton: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginRight: 8,
+    marginBottom: 8,
+  },
+  selectedOption: {
+    borderColor: '#007AFF',
+    backgroundColor: '#007AFF',
+  },
+  optionText: {
+    fontSize: 14,
+    color: '#333',
+  },
+  selectedOptionText: {
+    color: '#fff',
+    fontWeight: '600',
+  },
+  activityOptions: {
+    gap: 8,
+  },
+  activityOption: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    padding: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  selectedActivityOption: {
+    borderColor: '#007AFF',
+    backgroundColor: '#f0f8ff',
+  },
+  activityContent: {
+    flex: 1,
+  },
+  activityLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 4,
+  },
+  selectedActivityLabel: {
+    color: '#007AFF',
+  },
+  activityDescription: {
+    fontSize: 14,
+    color: '#666',
   },
 });
