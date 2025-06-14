@@ -1,4 +1,13 @@
 # Changelog
+## 3.4.5 - Enhanced Profile Phase 2: Goals & Progress Tracking (2025-06-14)
+- **Goal Setting Interface:** Added weight goals (lose, maintain, gain) to health data form
+- **Progress Tracking System:** Created comprehensive progress tracking utilities with timelines
+- **Enhanced Health Dashboard:** Added goal progress display with current/target weight and timeline
+- **Smart Calorie Calculator:** Automatic calorie target calculation based on BMR and weight goals
+- **Visual Enhancements:** Color-coded BMI display and motivational progress messages
+- **Timeline Estimates:** Calculate realistic timelines for weight goals with safe rates
+- **Progress Motivation:** Dynamic motivational messages based on goal progress
+
 ## 3.4.4 - Enhanced Profile Phase 1: Health Data and Calculations (2025-06-14)
 - **Health Calculation Utilities:** Created comprehensive BMI, BMR, and calorie calculation functions
 - **Enhanced useUserProfile Hook:** Added health metrics calculation and profile completeness tracking

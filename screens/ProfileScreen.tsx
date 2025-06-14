@@ -15,6 +15,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../lib/AuthContext';
 import { useUserProfile } from '../hooks/useUserProfile';
+import { calculateWeightGoalProgress, getProgressMotivation, formatTimelineText, getBMIColor } from '../utils/progressTracking';
 
 export default function ProfileScreen() {
   const { session, signOut } = useAuth();
@@ -54,6 +55,9 @@ export default function ProfileScreen() {
     height: '',
     gender: 'prefer_not_to_say' as 'male' | 'female' | 'other' | 'prefer_not_to_say',
     activityLevel: 'moderately_active' as 'sedentary' | 'lightly_active' | 'moderately_active' | 'very_active' | 'extremely_active',
+    weightGoal: 'maintain' as 'maintain' | 'lose' | 'gain',
+    targetWeight: '',
+    dailyCalorieTarget: '',
   });
 
   // Always call hooks before any return
@@ -156,17 +160,49 @@ export default function ProfileScreen() {
 
     setLoading(true);
     try {
+      // Calculate recommended calorie target if not provided
+      let calculatedCalorieTarget = healthData.dailyCalorieTarget ? parseInt(healthData.dailyCalorieTarget) : undefined;
+      
+      if (!calculatedCalorieTarget) {
+        // Calculate BMR and daily calorie needs
+        const { calculateBMR, calculateDailyCalorieNeeds } = await import('../utils/healthCalculations');
+        const gender = (healthData.gender === 'male' || healthData.gender === 'female') ? healthData.gender : 'male';
+        const units = profile?.preferredUnits || 'metric';
+        
+        const bmr = calculateBMR(
+          parseFloat(healthData.weight),
+          parseFloat(healthData.height),
+          parseInt(healthData.age),
+          gender,
+          units
+        );
+        
+        let dailyCalories = calculateDailyCalorieNeeds(bmr, healthData.activityLevel);
+        
+        // Adjust for weight goal
+        if (healthData.weightGoal === 'lose') {
+          dailyCalories -= 500; // 500 calorie deficit for 1lb/week loss
+        } else if (healthData.weightGoal === 'gain') {
+          dailyCalories += 300; // 300 calorie surplus for gradual gain
+        }
+        
+        calculatedCalorieTarget = dailyCalories;
+      }
+
       const success = await updateProfile({
         age: parseInt(healthData.age),
         weight: parseFloat(healthData.weight),
         height: parseFloat(healthData.height),
         gender: healthData.gender,
         activityLevel: healthData.activityLevel,
+        weightGoal: healthData.weightGoal,
+        targetWeight: healthData.targetWeight ? parseFloat(healthData.targetWeight) : undefined,
+        dailyCalorieTarget: calculatedCalorieTarget,
       });
 
       if (success) {
         setShowHealthModal(false);
-        Alert.alert('Success', 'Health data saved successfully!');
+        Alert.alert('Success', 'Health data and goals saved successfully!');
       } else {
         Alert.alert('Error', 'Failed to save health data.');
       }
@@ -224,7 +260,9 @@ export default function ProfileScreen() {
                   <>
                     <View style={styles.healthRow}>
                       <View style={styles.healthMetric}>
-                        <Text style={styles.metricValue}>{healthMetrics.bmi}</Text>
+                        <Text style={[styles.metricValue, { color: getBMIColor(healthMetrics.bmi) }]}>
+                          {healthMetrics.bmi}
+                        </Text>
                         <Text style={styles.metricLabel}>BMI</Text>
                         <Text style={styles.metricCategory}>{healthMetrics.bmiCategory}</Text>
                       </View>
@@ -255,6 +293,48 @@ export default function ProfileScreen() {
                           </View>
                         </View>
                       </View>
+                    )}
+                    
+                    {/* Goal Progress */}
+                    {profile?.weightGoal && profile?.weightGoal !== 'maintain' && profile?.weight && profile?.targetWeight && (
+                      (() => {
+                        const progress = calculateWeightGoalProgress(
+                          profile.weight,
+                          profile.targetWeight,
+                          profile.weightGoal
+                        );
+                        const motivation = getProgressMotivation(progress);
+                        const timeline = formatTimelineText(progress.estimatedWeeksToGoal);
+                        
+                        return (
+                          <View style={styles.goalRow}>
+                            <Text style={styles.goalTitle}>
+                              {profile.weightGoal === 'lose' ? 'Weight Loss Goal' : 'Weight Gain Goal'}
+                            </Text>
+                            <View style={styles.goalProgress}>
+                              <View style={styles.goalStats}>
+                                <Text style={styles.goalText}>
+                                  Current: {profile.weight}{profile.preferredUnits === 'metric' ? 'kg' : 'lbs'}
+                                </Text>
+                                <Text style={styles.goalText}>
+                                  Target: {profile.targetWeight}{profile.preferredUnits === 'metric' ? 'kg' : 'lbs'}
+                                </Text>
+                                <Text style={styles.goalRemaining}>
+                                  {progress.remainingWeight.toFixed(1)}{profile.preferredUnits === 'metric' ? 'kg' : 'lbs'} to go
+                                </Text>
+                              </View>
+                              <View style={styles.goalTimeline}>
+                                <Text style={styles.goalTimelineText}>
+                                  Est. {timeline} to goal
+                                </Text>
+                                <Text style={styles.goalMotivation}>
+                                  {motivation}
+                                </Text>
+                              </View>
+                            </View>
+                          </View>
+                        );
+                      })()
                     )}
                   </>
                 ) : null;
@@ -533,6 +613,61 @@ export default function ProfileScreen() {
                     </TouchableOpacity>
                   ))}
                 </View>
+              </View>
+
+              {/* Goals Section */}
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Health Goals</Text>
+                <View style={styles.optionGrid}>
+                  {[
+                    { value: 'lose', label: 'Lose Weight' },
+                    { value: 'maintain', label: 'Maintain Weight' },
+                    { value: 'gain', label: 'Gain Weight' },
+                  ].map((goal) => (
+                    <TouchableOpacity
+                      key={goal.value}
+                      style={[
+                        styles.optionButton,
+                        healthData.weightGoal === goal.value && styles.selectedOption
+                      ]}
+                      onPress={() => setHealthData({ ...healthData, weightGoal: goal.value as any })}
+                    >
+                      <Text style={[
+                        styles.optionText,
+                        healthData.weightGoal === goal.value && styles.selectedOptionText
+                      ]}>
+                        {goal.label}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
+              {healthData.weightGoal !== 'maintain' && (
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Target Weight ({profile?.preferredUnits === 'metric' ? 'kg' : 'lbs'})</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={healthData.targetWeight}
+                    onChangeText={(text) => setHealthData({ ...healthData, targetWeight: text })}
+                    placeholder="Enter target weight"
+                    keyboardType="numeric"
+                  />
+                </View>
+              )}
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Daily Calorie Target (optional)</Text>
+                <TextInput
+                  style={styles.input}
+                  value={healthData.dailyCalorieTarget}
+                  onChangeText={(text) => setHealthData({ ...healthData, dailyCalorieTarget: text })}
+                  placeholder="Leave blank for automatic calculation"
+                  keyboardType="numeric"
+                />
+                <Text style={styles.inputHint}>
+                  We'll calculate this based on your data if left blank
+                </Text>
               </View>
             </View>
           </ScrollView>
@@ -923,5 +1058,57 @@ const styles = StyleSheet.create({
   activityDescription: {
     fontSize: 14,
     color: '#666',
+  },
+  inputHint: {
+    fontSize: 12,
+    color: '#999',
+    marginTop: 4,
+    fontStyle: 'italic',
+  },
+  goalRow: {
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+    paddingTop: 16,
+    marginTop: 16,
+  },
+  goalTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 8,
+  },
+  goalProgress: {
+    gap: 12,
+  },
+  goalStats: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  goalText: {
+    fontSize: 14,
+    color: '#666',
+  },
+  goalRemaining: {
+    fontSize: 14,
+    color: '#007AFF',
+    fontWeight: '600',
+  },
+  goalTimeline: {
+    alignItems: 'center',
+    backgroundColor: '#f0f8ff',
+    borderRadius: 8,
+    padding: 8,
+  },
+  goalTimelineText: {
+    fontSize: 12,
+    color: '#007AFF',
+    fontWeight: '600',
+  },
+  goalMotivation: {
+    fontSize: 12,
+    color: '#666',
+    textAlign: 'center',
+    marginTop: 4,
   },
 });
