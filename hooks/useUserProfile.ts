@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { amplifyClient } from '../lib/amplify';
 import type { Schema } from '../amplify/data/resource';
 import { useAuth } from '../lib/AuthContext';
+import { calculateHealthMetrics, calculateMacroTargets, type HealthMetrics, type MacroTargets } from '../utils/healthCalculations';
 
 type UserProfile = Schema['UserProfile']['type'];
 
@@ -47,14 +48,20 @@ export const useUserProfile = () => {
         userId: session.user.id,
         username: session.user.email?.split('@')[0] || 'user',
         displayName: session.user.user_metadata?.full_name || 'User',
+        // Settings
         notificationsEnabled: true,
         emailNotificationsEnabled: true,
         pushNotificationsEnabled: true,
         privacyProfilePublic: false,
         privacyShareData: false,
+        // Preferences
         preferredUnits: 'metric' as 'metric' | 'imperial',
         theme: 'system' as 'light' | 'dark' | 'system',
         language: 'en',
+        // AI Settings - defaults to disabled
+        aiFeaturesEnabled: false,
+        smartMealPlanningEnabled: false,
+        smartRecommendationsEnabled: false,
       });
 
       return newProfile;
@@ -111,6 +118,64 @@ export const useUserProfile = () => {
     loadProfile();
   }, [loadProfile]);
 
+  // Calculate health metrics based on current profile data
+  const getHealthMetrics = useCallback((): HealthMetrics | null => {
+    if (!profile?.weight || !profile?.height || !profile?.age || !profile?.gender || !profile?.activityLevel) {
+      return null;
+    }
+
+    return calculateHealthMetrics(
+      profile.weight,
+      profile.height,
+      profile.age,
+      profile.gender,
+      profile.activityLevel,
+      profile.preferredUnits || 'metric'
+    );
+  }, [profile]);
+
+  // Calculate macro targets based on health data and goals
+  const getMacroTargets = useCallback((): MacroTargets | null => {
+    if (!profile?.weight || !profile?.dailyCalorieTarget || !profile?.weightGoal) {
+      return null;
+    }
+
+    return calculateMacroTargets(
+      profile.dailyCalorieTarget,
+      profile.weightGoal,
+      profile.weight,
+      profile.preferredUnits || 'metric'
+    );
+  }, [profile]);
+
+  // Check if health profile is complete
+  const isHealthProfileComplete = useCallback((): boolean => {
+    return !!(
+      profile?.age &&
+      profile?.weight &&
+      profile?.height &&
+      profile?.gender &&
+      profile?.activityLevel
+    );
+  }, [profile]);
+
+  // Get completion percentage of profile
+  const getProfileCompleteness = useCallback((): number => {
+    if (!profile) return 0;
+
+    const requiredFields = [
+      'username', 'displayName', 'age', 'weight', 'height',
+      'gender', 'activityLevel', 'weightGoal', 'dailyCalorieTarget'
+    ];
+    
+    const completedFields = requiredFields.filter(field => {
+      const value = profile[field as keyof UserProfile];
+      return value !== null && value !== undefined && value !== '';
+    });
+
+    return Math.round((completedFields.length / requiredFields.length) * 100);
+  }, [profile]);
+
   return {
     profile,
     loading,
@@ -118,5 +183,10 @@ export const useUserProfile = () => {
     updateProfile,
     deleteProfile,
     refreshProfile: loadProfile,
+    // Health calculation utilities
+    getHealthMetrics,
+    getMacroTargets,
+    isHealthProfileComplete,
+    getProfileCompleteness,
   };
 };

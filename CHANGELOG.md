@@ -1,5 +1,9 @@
 # Changelog
-## 3.4.4 - Enhanced Profile Planning with Health Data and AI Integration (2025-06-14)
+## 3.4.4 - Enhanced Profile Phase 1: Health Data and Calculations (2025-06-14)
+- **Health Calculation Utilities:** Created comprehensive BMI, BMR, and calorie calculation functions
+- **Enhanced useUserProfile Hook:** Added health metrics calculation and profile completeness tracking
+- **Enhanced Profile Screen:** Added health summary dashboard with BMI, calories, and macro targets
+- **Health Data Form Screen:** Created dedicated HealthDataScreen for comprehensive health data input
 - **Enhanced Profile Schema:** Added comprehensive health data fields (age, weight, height, gender, activity level)
 - **Health Goals:** Added weight goals, calorie targets, and macro targets (protein, carbs, fat)
 - **Dietary Preferences:** Added dietary restrictions, allergies, disliked ingredients, and cuisine preferences

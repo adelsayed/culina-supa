@@ -29,7 +29,15 @@ export default function ProfileScreen() {
     );
   }
 
-  const { profile, loading: profileLoading, updateProfile } = useUserProfile();
+  const {
+    profile,
+    loading: profileLoading,
+    updateProfile,
+    getHealthMetrics,
+    getMacroTargets,
+    isHealthProfileComplete,
+    getProfileCompleteness
+  } = useUserProfile();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -157,6 +165,84 @@ export default function ProfileScreen() {
             <TouchableOpacity style={styles.editButton} onPress={handleEdit}>
               <Ionicons name="pencil" size={20} color="#007AFF" />
             </TouchableOpacity>
+          )}
+        </View>
+
+        {/* Health Summary */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Health Summary</Text>
+            <View style={styles.completionBadge}>
+              <Text style={styles.completionText}>{getProfileCompleteness()}% Complete</Text>
+            </View>
+          </View>
+          
+          {isHealthProfileComplete() ? (
+            <View style={styles.healthSummary}>
+              {(() => {
+                const healthMetrics = getHealthMetrics();
+                const macroTargets = getMacroTargets();
+                return healthMetrics ? (
+                  <>
+                    <View style={styles.healthRow}>
+                      <View style={styles.healthMetric}>
+                        <Text style={styles.metricValue}>{healthMetrics.bmi}</Text>
+                        <Text style={styles.metricLabel}>BMI</Text>
+                        <Text style={styles.metricCategory}>{healthMetrics.bmiCategory}</Text>
+                      </View>
+                      <View style={styles.healthMetric}>
+                        <Text style={styles.metricValue}>{healthMetrics.dailyCalorieNeeds}</Text>
+                        <Text style={styles.metricLabel}>Daily Calories</Text>
+                      </View>
+                      <View style={styles.healthMetric}>
+                        <Text style={styles.metricValue}>{profile?.age}</Text>
+                        <Text style={styles.metricLabel}>Age</Text>
+                      </View>
+                    </View>
+                    {macroTargets && (
+                      <View style={styles.macroRow}>
+                        <Text style={styles.macroTitle}>Daily Macro Targets</Text>
+                        <View style={styles.macroTargets}>
+                          <View style={styles.macroItem}>
+                            <Text style={styles.macroValue}>{macroTargets.protein}g</Text>
+                            <Text style={styles.macroLabel}>Protein</Text>
+                          </View>
+                          <View style={styles.macroItem}>
+                            <Text style={styles.macroValue}>{macroTargets.carbs}g</Text>
+                            <Text style={styles.macroLabel}>Carbs</Text>
+                          </View>
+                          <View style={styles.macroItem}>
+                            <Text style={styles.macroValue}>{macroTargets.fat}g</Text>
+                            <Text style={styles.macroLabel}>Fat</Text>
+                          </View>
+                        </View>
+                      </View>
+                    )}
+                  </>
+                ) : null;
+              })()}
+            </View>
+          ) : (
+            <View style={styles.incompleteHealth}>
+              <Ionicons name="fitness-outline" size={48} color="#ccc" />
+              <Text style={styles.incompleteTitle}>Complete Your Health Profile</Text>
+              <Text style={styles.incompleteText}>
+                Add your health data to get personalized meal recommendations and nutrition tracking.
+              </Text>
+              <TouchableOpacity
+                style={styles.completeButton}
+                onPress={() => {
+                  // For now, we'll show an alert. In a real app, this would navigate to HealthDataScreen
+                  Alert.alert(
+                    'Health Data Setup',
+                    'Navigate to Health Data screen to complete your profile setup.',
+                    [{ text: 'OK', style: 'default' }]
+                  );
+                }}
+              >
+                <Text style={styles.completeButtonText}>Add Health Data</Text>
+              </TouchableOpacity>
+            </View>
           )}
         </View>
 
@@ -468,5 +554,111 @@ const styles = StyleSheet.create({
   detailText: {
     fontSize: 18,
     marginBottom: 10,
+  },
+  // Health Summary Styles
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  completionBadge: {
+    backgroundColor: '#007AFF',
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  completionText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  healthSummary: {
+    backgroundColor: '#f8f9fa',
+    borderRadius: 12,
+    padding: 16,
+  },
+  healthRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: 16,
+  },
+  healthMetric: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  metricValue: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#007AFF',
+  },
+  metricLabel: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 4,
+  },
+  metricCategory: {
+    fontSize: 10,
+    color: '#999',
+    marginTop: 2,
+  },
+  macroRow: {
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+    paddingTop: 16,
+  },
+  macroTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  macroTargets: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  macroItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  macroValue: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#34C759',
+  },
+  macroLabel: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 4,
+  },
+  incompleteHealth: {
+    alignItems: 'center',
+    paddingVertical: 32,
+  },
+  incompleteTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  incompleteText: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 20,
+    lineHeight: 20,
+  },
+  completeButton: {
+    backgroundColor: '#007AFF',
+    borderRadius: 8,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+  },
+  completeButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
