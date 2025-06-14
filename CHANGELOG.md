@@ -1,8 +1,18 @@
 # Changelog
-## 3.4.3 - Delete Recipe Functionality Implementation (2025-06-14)
-- Implemented delete recipe functionality with confirmation dialog and API cleanup.
-- Added proper error handling and user feedback for delete operations.
-- Enhanced recipe management with complete CRUD operations.
+## 3.4.3 - Enhanced Shopping List Ingredient Parsing and Delete Recipe (2025-06-14)
+- **Enhanced Ingredient Parsing:** Completely rewrote ingredient parsing algorithm to handle complex cases:
+  - Supports fractions (1/2, 1/4, 2/3) and mixed numbers (1 1/2)
+  - Handles ranges (2-3 cloves) using average values
+  - Parses multi-word ingredients correctly ("6 cups vegetable broth")
+  - Removes descriptors (chopped, diced, fresh) for cleaner ingredient names
+  - Normalizes units to standard forms (tablespoons → tbsp, grams → g)
+  - Special handling for "to taste" ingredients
+- **Improved Categorization:** Added comprehensive ingredient categorization with:
+  - UAE/Middle Eastern ingredients (sumac, za'atar, labneh, halloumi, hammour)
+  - New categories: Beverages, Snacks & Sweets, Household items
+  - Enhanced produce, dairy, meat, and pantry keyword recognition
+  - Updated shopping order for better store navigation
+- **Recipe Management:** Implemented delete recipe functionality with confirmation dialog and API cleanup.
 
 ## 3.4.2 - Enhanced My Recipes List with Search, Sort, and Improved UI (2025-06-14)
 - Added search functionality to filter recipes by name, ingredients, or tags.
