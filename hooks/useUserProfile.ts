@@ -55,10 +55,11 @@ export const useUserProfile = () => {
         privacyProfilePublic: false,
         privacyShareData: false,
         // Preferences
-        preferredUnits: 'metric' as 'metric' | 'imperial',
-        theme: 'system' as 'light' | 'dark' | 'system',
+        preferredUnits: 'metric',
+        theme: 'system',
         language: 'en',
         // AI Settings - defaults to disabled
+        aiModel: 'gpt-3.5-turbo',
         aiFeaturesEnabled: false,
         smartMealPlanningEnabled: false,
         smartRecommendationsEnabled: false,
@@ -124,11 +125,16 @@ export const useUserProfile = () => {
       return null;
     }
 
+    // Convert gender for health calculations - default to 'male' for non-binary options
+    const calculationGender = (profile.gender === 'male' || profile.gender === 'female')
+      ? profile.gender
+      : 'male'; // Default for 'other' and 'prefer_not_to_say'
+
     return calculateHealthMetrics(
       profile.weight,
       profile.height,
       profile.age,
-      profile.gender,
+      calculationGender,
       profile.activityLevel,
       profile.preferredUnits || 'metric'
     );

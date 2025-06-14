@@ -38,13 +38,13 @@ const schema = a.schema({
       privacyShareData: a.boolean().default(false),
       
       // Preferences
-      preferredUnits: a.enum(['metric', 'imperial']).default('metric'),
-      theme: a.enum(['light', 'dark', 'system']).default('system'),
+      preferredUnits: a.enum(['metric', 'imperial']),
+      theme: a.enum(['light', 'dark', 'system']),
       language: a.string().default('en'),
       
       // AI Integration Settings
       openaiApiKey: a.string(), // Encrypted storage for user's OpenAI API key
-      aiModel: a.enum(['gpt-3.5-turbo', 'gpt-4', 'gpt-4-turbo']).default('gpt-3.5-turbo'),
+      aiModel: a.enum(['gpt-3.5-turbo', 'gpt-4', 'gpt-4-turbo']),
       aiFeaturesEnabled: a.boolean().default(false),
       smartMealPlanningEnabled: a.boolean().default(false),
       smartRecommendationsEnabled: a.boolean().default(false),
