@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, StyleSheet, Image, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, FlatList, StyleSheet, Image, TouchableOpacity, ActivityIndicator, TextInput, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { amplifyClient } from '../lib/amplify';
 import type { Schema } from '../amplify/data/resource';
@@ -10,15 +10,24 @@ import { navigateToRecipe } from '../lib/navigation';
 
 type Recipe = Schema['Recipe']['type'];
 
-const RecipeItem: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
+const RecipeItem: React.FC<{
+  recipe: Recipe;
+  isFavorite: boolean;
+  onToggleFavorite: (id: string) => void;
+  onEdit?: (id: string) => void;
+  onDelete?: (id: string) => void;
+}> = ({ recipe, isFavorite, onToggleFavorite, onEdit, onDelete }) => {
   const [imageError, setImageError] = useState(false);
 
   const ingredients = recipe.ingredients ? JSON.parse(recipe.ingredients) : [];
+  const tags = Array.isArray(recipe.tags) ? recipe.tags.filter((t): t is string => typeof t === 'string' && !!t) : [];
+  const category = recipe.category || '';
 
   return (
-    <TouchableOpacity 
+    <TouchableOpacity
       style={styles.recipeItem}
       onPress={() => navigateToRecipe(recipe.id)}
+      activeOpacity={0.85}
     >
       {imageError ? (
         <View style={[styles.recipeImage, styles.placeholderImage]}>
@@ -33,9 +42,53 @@ const RecipeItem: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
       )}
       <View style={styles.recipeDetails}>
         <Text style={styles.recipeName}>{recipe.name}</Text>
+        {category ? (
+          <Text style={styles.recipeCategory}>{category}</Text>
+        ) : null}
         <Text style={styles.recipeIngredients} numberOfLines={2}>
           Ingredients: {ingredients.join(', ')}
         </Text>
+        {tags.length > 0 && (
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 2 }}>
+            {tags.map((tag: string) => (
+              <View
+                key={tag}
+                style={{
+                  backgroundColor: '#eee',
+                  borderRadius: 8,
+                  paddingHorizontal: 6,
+                  paddingVertical: 2,
+                  marginRight: 4,
+                  marginBottom: 2,
+                }}
+              >
+                <Text style={{ fontSize: 12, color: '#007AFF' }}>{tag}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+      </View>
+      <View style={{ flexDirection: 'column', alignItems: 'center', marginLeft: 8 }}>
+        <TouchableOpacity
+          onPress={() => onToggleFavorite(recipe.id)}
+          accessibilityLabel={isFavorite ? "Unfavorite" : "Favorite"}
+        >
+          <Ionicons name={isFavorite ? "heart" : "heart-outline"} size={22} color="#FF4081" />
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => onEdit && onEdit(recipe.id)}
+          style={{ marginTop: 10 }}
+          accessibilityLabel="Edit Recipe"
+        >
+          <Ionicons name="create-outline" size={20} color="#007AFF" />
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => onDelete && onDelete(recipe.id)}
+          style={{ marginTop: 10 }}
+          accessibilityLabel="Delete Recipe"
+        >
+          <Ionicons name="trash-outline" size={20} color="#FF3B30" />
+        </TouchableOpacity>
       </View>
     </TouchableOpacity>
   );
@@ -44,7 +97,61 @@ const RecipeItem: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
 const MyRecipesWithAmplify: React.FC = () => {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [favorites, setFavorites] = useState<string[]>([]);
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+  const [sort, setSort] = useState<'recent' | 'az' | 'za' | 'favorites'>('recent');
+  const [tagFilter, setTagFilter] = useState<string | null>(null);
   const { session } = useAuth();
+
+  // Toggle favorite for a recipe
+  const toggleFavorite = (id: string) => {
+    setFavorites((prev) =>
+      prev.includes(id) ? prev.filter(fav => fav !== id) : [...prev, id]
+    );
+  };
+
+  // Delete recipe with confirmation
+  const handleDeleteRecipe = (id: string) => {
+    const recipe = recipes.find(r => r.id === id);
+    if (!recipe) return;
+
+    Alert.alert(
+      'Delete Recipe',
+      `Are you sure you want to delete "${recipe.name}"? This action cannot be undone.`,
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await amplifyClient.models.Recipe.delete({ id });
+              // Remove from favorites if it was favorited
+              setFavorites(prev => prev.filter(fav => fav !== id));
+              // Note: The subscription will automatically update the recipes list
+            } catch (error) {
+              console.error('Error deleting recipe:', error);
+              Alert.alert('Error', 'Failed to delete recipe. Please try again.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  // Extract unique tags from all recipes
+  const allTags = Array.from(
+    new Set(
+      recipes
+        .flatMap(r => Array.isArray(r.tags) ? r.tags : [])
+        .filter((t): t is string => typeof t === 'string' && !!t)
+        .map((t: string) => t.trim())
+    )
+  );
 
   // Navigation for add recipe
   const handleAddRecipe = () => {
@@ -171,19 +278,163 @@ const MyRecipesWithAmplify: React.FC = () => {
     );
   }
 
+  // Filter and sort recipes
+  let filteredRecipes = recipes.filter((recipe) => {
+    const query = search.toLowerCase();
+    const name = recipe.name?.toLowerCase() || '';
+    const ingredients = recipe.ingredients ? JSON.parse(recipe.ingredients).join(', ').toLowerCase() : '';
+    const tags = Array.isArray(recipe.tags) ? recipe.tags.join(', ').toLowerCase() : '';
+    const matchesTag = tagFilter ? (Array.isArray(recipe.tags) && recipe.tags.includes(tagFilter)) : true;
+    return (
+      (name.includes(query) ||
+      ingredients.includes(query) ||
+      tags.includes(query)) && matchesTag
+    );
+  });
+
+  // Sorting
+  if (sort === 'az') {
+    filteredRecipes = filteredRecipes.slice().sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+  } else if (sort === 'za') {
+    filteredRecipes = filteredRecipes.slice().sort((a, b) => (b.name || '').localeCompare(a.name || ''));
+  } else if (sort === 'favorites') {
+    filteredRecipes = filteredRecipes.slice().sort((a, b) => {
+      const aFav = favorites.includes(a.id) ? -1 : 1;
+      const bFav = favorites.includes(b.id) ? -1 : 1;
+      return aFav - bFav;
+    });
+  } // 'recent' is default order
+
   return (
     <View style={styles.container}>
-      {/* Add Recipe "+" icon at top right */}
-      <TouchableOpacity
-        style={styles.addButton}
-        onPress={handleAddRecipe}
-        accessibilityLabel="Add Recipe"
-      >
-        <Ionicons name="add" size={32} color="#007AFF" />
-      </TouchableOpacity>
+      {/* Header with Search, Favorites, Add */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+        <View style={{ flex: 1 }}>
+          <TextInput
+            style={{
+              borderWidth: 1,
+              borderColor: '#ddd',
+              borderRadius: 8,
+              padding: 10,
+              backgroundColor: '#fafbfc',
+              fontSize: 16,
+            }}
+            placeholder="Search recipes..."
+            value={search}
+            onChangeText={setSearch}
+          />
+        </View>
+        <TouchableOpacity
+          style={{ marginLeft: 8 }}
+          onPress={() => setShowFavoritesOnly(f => !f)}
+        >
+          <Ionicons name={showFavoritesOnly ? "heart" : "heart-outline"} size={28} color="#FF4081" />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={{ marginLeft: 8, backgroundColor: '#fff', borderRadius: 20, padding: 4, elevation: 2 }}
+          onPress={handleAddRecipe}
+          accessibilityLabel="Add Recipe"
+        >
+          <Ionicons name="add" size={32} color="#007AFF" />
+        </TouchableOpacity>
+      </View>
+      {/* Sort Segmented Control */}
+      <View style={{ flexDirection: 'row', justifyContent: 'center', marginBottom: 10 }}>
+        {/* Recent */}
+        <TouchableOpacity
+          onPress={() => setSort('recent')}
+          style={{
+            backgroundColor: sort === 'recent' ? '#007AFF' : '#eee',
+            borderRadius: 16,
+            paddingVertical: 6,
+            paddingHorizontal: 18,
+            marginHorizontal: 4,
+          }}
+        >
+          <Text style={{ color: sort === 'recent' ? '#fff' : '#007AFF', fontWeight: '600' }}>Recent</Text>
+        </TouchableOpacity>
+        {/* A-Z / Z-A */}
+        <TouchableOpacity
+          onPress={() => setSort(sort === 'az' ? 'za' : 'az')}
+          style={{
+            backgroundColor: sort === 'az' || sort === 'za' ? '#007AFF' : '#eee',
+            borderRadius: 16,
+            paddingVertical: 6,
+            paddingHorizontal: 18,
+            marginHorizontal: 4,
+            flexDirection: 'row',
+            alignItems: 'center',
+          }}
+        >
+          <Text style={{ color: sort === 'az' || sort === 'za' ? '#fff' : '#007AFF', fontWeight: '600' }}>
+            {sort === 'za' ? 'Z-A' : 'A-Z'}
+          </Text>
+          <Ionicons
+            name={sort === 'za' ? 'arrow-down' : 'arrow-up'}
+            size={16}
+            color={sort === 'az' || sort === 'za' ? '#fff' : '#007AFF'}
+            style={{ marginLeft: 4 }}
+          />
+        </TouchableOpacity>
+        {/* Favs */}
+        <TouchableOpacity
+          onPress={() => setSort('favorites')}
+          style={{
+            backgroundColor: sort === 'favorites' ? '#007AFF' : '#eee',
+            borderRadius: 16,
+            paddingVertical: 6,
+            paddingHorizontal: 18,
+            marginHorizontal: 4,
+          }}
+        >
+          <Text style={{ color: sort === 'favorites' ? '#fff' : '#007AFF', fontWeight: '600' }}>Favs</Text>
+        </TouchableOpacity>
+      </View>
+      {/* Tag Filter Bar */}
+      {allTags.length > 0 && (
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: 8 }}>
+          <TouchableOpacity
+            style={{
+              backgroundColor: tagFilter === null ? '#007AFF' : '#eee',
+              borderRadius: 12,
+              paddingVertical: 4,
+              paddingHorizontal: 12,
+              marginRight: 8,
+              marginBottom: 4,
+            }}
+            onPress={() => setTagFilter(null)}
+          >
+            <Text style={{ color: tagFilter === null ? '#fff' : '#007AFF', fontWeight: '600' }}>All</Text>
+          </TouchableOpacity>
+          {allTags.map(tag => (
+            <TouchableOpacity
+              key={tag}
+              style={{
+                backgroundColor: tagFilter === tag ? '#007AFF' : '#eee',
+                borderRadius: 12,
+                paddingVertical: 4,
+                paddingHorizontal: 12,
+                marginRight: 8,
+                marginBottom: 4,
+              }}
+              onPress={() => setTagFilter(tag)}
+            >
+              <Text style={{ color: tagFilter === tag ? '#fff' : '#007AFF', fontWeight: '600' }}>{tag}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
       <FlatList
-        data={recipes}
-        renderItem={({ item }) => <RecipeItem recipe={item} />}
+        data={filteredRecipes.filter(r => !showFavoritesOnly || favorites.includes(r.id))}
+        renderItem={({ item }) => (
+          <RecipeItem
+            recipe={item}
+            isFavorite={favorites.includes(item.id)}
+            onToggleFavorite={toggleFavorite}
+            onEdit={(id) => navigateToRecipe(`edit?id=${id}`)}
+            onDelete={handleDeleteRecipe}
+          />
+        )}
         keyExtractor={(item) => item.id}
         style={styles.list}
       />
@@ -227,7 +478,14 @@ const styles = StyleSheet.create({
   recipeName: {
     fontSize: 16,
     fontWeight: 'bold',
-    marginBottom: 4,
+    marginBottom: 2,
+  },
+  recipeCategory: {
+    fontSize: 13,
+    color: '#007AFF',
+    fontWeight: '600',
+    marginBottom: 2,
+    textTransform: 'capitalize',
   },
   recipeIngredients: {
     fontSize: 14,

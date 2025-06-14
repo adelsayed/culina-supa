@@ -64,8 +64,47 @@ export default function EditRecipeScreen() {
           setCategory(recipeData.category || '');
           
           // Parse ingredients and instructions
+          console.log('Raw ingredients from DB:', recipeData.ingredients);
           const parsedIngredients = recipeData.ingredients ? JSON.parse(recipeData.ingredients) : [{ name: '', quantity: '', unit: '' }];
-          setIngredients(Array.isArray(parsedIngredients) ? parsedIngredients : [{ name: '', quantity: '', unit: '' }]);
+          console.log('Parsed ingredients:', parsedIngredients);
+          
+          // Parse ingredient string into quantity, unit, and name
+          const parseIngredientString = (ingredientStr: string) => {
+            // Common units to look for
+            const units = ['g', 'kg', 'ml', 'l', 'cup', 'cups', 'tbsp', 'tsp', 'piece', 'pieces', 'can', 'cans', 'packet', 'packets', 'slice', 'slices', 'clove', 'cloves', 'oz', 'lb', 'lbs'];
+            
+            // Match patterns like "6 cups", "200g", "1/2 cup", "2 tbsp", etc.
+            const match = ingredientStr.match(/^(\d+(?:\/\d+)?(?:\.\d+)?)\s*(g|kg|ml|l|cup|cups|tbsp|tsp|piece|pieces|can|cans|packet|packets|slice|slices|clove|cloves|oz|lb|lbs)?\s*(.+)$/i);
+            
+            if (match) {
+              const quantity = match[1];
+              const unit = match[2] || '';
+              const name = match[3].trim();
+              return { quantity, unit, name };
+            }
+            
+            // If no match, put everything in name
+            return { quantity: '', unit: '', name: ingredientStr };
+          };
+
+          // Handle both string array format (from dummy data) and object format
+          let formattedIngredients;
+          if (Array.isArray(parsedIngredients)) {
+            if (parsedIngredients.length > 0 && typeof parsedIngredients[0] === 'string') {
+              // Convert string array to object format with smart parsing
+              formattedIngredients = parsedIngredients.map(ingredient => parseIngredientString(ingredient));
+            } else if (parsedIngredients.length > 0 && typeof parsedIngredients[0] === 'object') {
+              // Already in object format
+              formattedIngredients = parsedIngredients;
+            } else {
+              formattedIngredients = [{ name: '', quantity: '', unit: '' }];
+            }
+          } else {
+            formattedIngredients = [{ name: '', quantity: '', unit: '' }];
+          }
+          
+          console.log('Formatted ingredients:', formattedIngredients);
+          setIngredients(formattedIngredients);
           
           const parsedInstructions = recipeData.instructions ? JSON.parse(recipeData.instructions) : [''];
           setInstructions(Array.isArray(parsedInstructions) ? parsedInstructions : ['']);

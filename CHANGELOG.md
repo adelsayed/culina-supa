@@ -1,4 +1,19 @@
 # Changelog
+## 3.4.3 - Delete Recipe Functionality Implementation (2025-06-14)
+- Implemented delete recipe functionality with confirmation dialog and API cleanup.
+- Added proper error handling and user feedback for delete operations.
+- Enhanced recipe management with complete CRUD operations.
+
+## 3.4.2 - Enhanced My Recipes List with Search, Sort, and Improved UI (2025-06-14)
+- Added search functionality to filter recipes by name, ingredients, or tags.
+- Implemented favorites toggle and filter to show only favorite recipes.
+- Added sorting options: Recent, A-Z, Z-A, and Favorites with segmented control UI.
+- Enhanced recipe cards to display category, tags, and quick action buttons (edit/delete/favorite).
+- Added tag filtering with visual tag chips for easy browsing.
+- Improved layout and spacing for better user experience.
+- Fixed recipe edit screen to properly load ingredients from both string array and object formats.
+- Added intelligent ingredient parsing to extract quantity, unit, and name from ingredient strings.
+
 ## 3.4.1 - S3 Recipe Image Upload and Display Fixes (2025-06-14)
 - Fixed S3 image upload path to use `public/users/...` for compatibility with Amplify Storage public access.
 - Set `contentType: 'image/jpeg'` on image uploads to ensure browser and app rendering.
