@@ -44,7 +44,7 @@ const schema = a.schema({
       
       // AI Integration Settings
       openaiApiKey: a.string(), // Encrypted storage for user's OpenAI API key
-      aiModel: a.enum(['gpt-3.5-turbo', 'gpt-4', 'gpt-4-turbo']),
+      aiModel: a.enum(['gpt35turbo', 'gpt4', 'gpt4turbo']),
       aiFeaturesEnabled: a.boolean().default(false),
       smartMealPlanningEnabled: a.boolean().default(false),
       smartRecommendationsEnabled: a.boolean().default(false),

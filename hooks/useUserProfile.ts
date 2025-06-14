@@ -59,7 +59,7 @@ export const useUserProfile = () => {
         theme: 'system',
         language: 'en',
         // AI Settings - defaults to disabled
-        aiModel: 'gpt-3.5-turbo',
+        aiModel: 'gpt35turbo',
         aiFeaturesEnabled: false,
         smartMealPlanningEnabled: false,
         smartRecommendationsEnabled: false,

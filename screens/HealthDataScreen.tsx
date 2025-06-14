@@ -81,7 +81,7 @@ const HealthDataScreen: React.FC = () => {
     { value: 'moderately_active', label: 'Moderately Active' },
     { value: 'very_active', label: 'Very Active' },
     { value: 'extremely_active', label: 'Extremely Active' },
-  ];
+  ] as const;
 
   const genderOptions = [
     { value: 'male', label: 'Male' },
