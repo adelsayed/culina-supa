@@ -1,0 +1,62 @@
+import { Amplify } from 'aws-amplify';
+import { StatusBar } from 'expo-status-bar';
+import { StyleSheet } from 'react-native';
+import { NavigationContainer } from '@react-navigation/native';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { Ionicons } from '@expo/vector-icons';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+
+import { AuthProvider } from './lib/AuthContext';
+import AuthScreen from './screens/AuthScreen';
+import SignUpScreen from './screens/SignUpScreen';
+import TodoList from './screens/TodoList';
+import MyRecipesScreen from './screens/MyRecipes';
+
+const Tab = createBottomTabNavigator();
+
+const TabNavigator = () => {
+  return (
+    <Tab.Navigator
+      screenOptions={({ route }) => ({
+        tabBarIcon: ({ focused, color, size }) => {
+          let iconName: keyof typeof Ionicons.glyphMap;
+
+          if (route.name === 'TodoList') {
+            iconName = focused ? 'list' : 'list-outline';
+          } else if (route.name === 'MyRecipes') {
+            iconName = focused ? 'restaurant' : 'restaurant-outline';
+          } else {
+            iconName = 'help-outline'; // fallback icon
+          }
+
+          return <Ionicons name={iconName} size={size} color={color} />;
+        },
+      })}
+    >
+      <Tab.Screen name="TodoList" component={TodoList} />
+      <Tab.Screen name="MyRecipes" component={MyRecipesScreen} />
+    </Tab.Navigator>
+  );
+};
+
+export default function App() {
+  return (
+    <SafeAreaProvider>
+      <AuthProvider>
+        <NavigationContainer>
+          <SafeAreaView style={styles.container} edges={['right', 'left']}>
+            <TabNavigator />
+            <StatusBar style="auto" />
+          </SafeAreaView>
+        </NavigationContainer>
+      </AuthProvider>
+    </SafeAreaProvider>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+  }
+});
