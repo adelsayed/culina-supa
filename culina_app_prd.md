@@ -25,9 +25,13 @@
 
 ## 📊 Core Features
 
-### 1. User Authentication (via Supabase)
+### 1. User Authentication & Profile (via Supabase)
 - Sign up / Sign in / Forgot password
-- Profile: name, username, email, password, settings (notifications, privacy)
+- **Basic Profile**: name, username, email, bio, profile image
+- **Health Data**: age, weight, height, gender, activity level, dietary restrictions
+- **Goals**: weight goal, calorie target, macro targets (protein, carbs, fat)
+- **Settings**: notifications, privacy, units (metric/imperial), theme
+- **AI Integration**: OpenAI API key, preferred AI models, smart features toggle
 
 ### 2. Recipe Management
 - **Create Recipe**: Title, Description, Ingredients, Instructions, Category, Images, Video
@@ -106,12 +110,22 @@ ShoppingListItem: a.model({
 
 ---
 
+### 7. AI-Powered Smart Features
+- **Smart Meal Planning**: Auto-generate weekly meal plans based on user health data
+- **Personalized Recommendations**: Recipe suggestions based on dietary preferences and goals
+- **Nutrition Optimization**: AI-powered macro balancing for meal plans
+- **Leftover Management**: Smart suggestions for using leftover ingredients
+- **Shopping List Optimization**: AI-enhanced ingredient consolidation and substitutions
+
+---
+
 ## 🔄 Phase 2 Roadmap
-- Barcode scanner integration for nutritional auto-entry
-- Social recipe sharing / discovery
-- Commenting, ratings, and likes on recipes
-- Grocery delivery integrations (via API)
-- Weekly meal generation by nutrition goal
+- **AI Integration**: OpenAI-powered meal planning and recipe recommendations
+- **Advanced Health Tracking**: BMI calculation, calorie needs estimation, progress tracking
+- **Smart Features**: Barcode scanner, nutrition auto-entry, ingredient substitutions
+- **Social Features**: Recipe sharing, community discovery, ratings and reviews
+- **Grocery Integration**: Delivery APIs (Talabat, Instashop, Carrefour)
+- **Analytics**: Nutrition trends, eating patterns, goal progress tracking
 
 ---
 

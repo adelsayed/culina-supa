@@ -1,4 +1,12 @@
 # Changelog
+## 3.4.4 - Enhanced Profile Planning with Health Data and AI Integration (2025-06-14)
+- **Enhanced Profile Schema:** Added comprehensive health data fields (age, weight, height, gender, activity level)
+- **Health Goals:** Added weight goals, calorie targets, and macro targets (protein, carbs, fat)
+- **Dietary Preferences:** Added dietary restrictions, allergies, disliked ingredients, and cuisine preferences
+- **AI Integration:** Added OpenAI API key storage, model selection, and smart features toggles
+- **Updated PRD:** Enhanced user profile requirements with AI-powered features
+- **Implementation Plan:** Created comprehensive roadmap for enhanced profile features
+
 ## 3.4.3 - Enhanced Shopping List Ingredient Parsing and Delete Recipe (2025-06-14)
 - **Enhanced Ingredient Parsing:** Completely rewrote ingredient parsing algorithm to handle complex cases:
   - Supports fractions (1/2, 1/4, 2/3) and mixed numbers (1 1/2)

@@ -8,16 +8,46 @@ const schema = a.schema({
       displayName: a.string(),
       bio: a.string(),
       profileImageUrl: a.string(),
+      
+      // Health Data
+      age: a.integer(),
+      weight: a.float(), // kg or lbs based on preferredUnits
+      height: a.float(), // cm or inches based on preferredUnits
+      gender: a.enum(['male', 'female', 'other', 'prefer_not_to_say']),
+      activityLevel: a.enum(['sedentary', 'lightly_active', 'moderately_active', 'very_active', 'extremely_active']),
+      
+      // Health Goals
+      weightGoal: a.enum(['maintain', 'lose', 'gain']),
+      targetWeight: a.float(),
+      dailyCalorieTarget: a.integer(),
+      proteinTarget: a.float(), // grams
+      carbsTarget: a.float(), // grams
+      fatTarget: a.float(), // grams
+      
+      // Dietary Restrictions & Preferences
+      dietaryRestrictions: a.string().array(), // ["vegetarian", "gluten-free", "dairy-free", etc.]
+      allergies: a.string().array(), // ["nuts", "shellfish", "eggs", etc.]
+      dislikedIngredients: a.string().array(),
+      preferredCuisines: a.string().array(), // ["italian", "mexican", "asian", etc.]
+      
       // Settings
       notificationsEnabled: a.boolean().default(true),
       emailNotificationsEnabled: a.boolean().default(true),
       pushNotificationsEnabled: a.boolean().default(true),
       privacyProfilePublic: a.boolean().default(false),
       privacyShareData: a.boolean().default(false),
+      
       // Preferences
-      preferredUnits: a.enum(['metric', 'imperial']),
-      theme: a.enum(['light', 'dark', 'system']),
+      preferredUnits: a.enum(['metric', 'imperial']).default('metric'),
+      theme: a.enum(['light', 'dark', 'system']).default('system'),
       language: a.string().default('en'),
+      
+      // AI Integration Settings
+      openaiApiKey: a.string(), // Encrypted storage for user's OpenAI API key
+      aiModel: a.enum(['gpt-3.5-turbo', 'gpt-4', 'gpt-4-turbo']).default('gpt-3.5-turbo'),
+      aiFeaturesEnabled: a.boolean().default(false),
+      smartMealPlanningEnabled: a.boolean().default(false),
+      smartRecommendationsEnabled: a.boolean().default(false),
     })
     .authorization(allow => [
       allow.publicApiKey(),
