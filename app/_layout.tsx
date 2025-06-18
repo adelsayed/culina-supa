@@ -1,86 +1,55 @@
-import { Stack, useRootNavigationState, useSegments, router } from 'expo-router';
-import { AuthProvider } from '../lib/AuthContext';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useEffect } from 'react';
-import { useAuth } from '../lib/AuthContext';
-import { View, ActivityIndicator, Text } from 'react-native';
+import { Stack, useRouter, useSegments } from 'expo-router';
+import { AuthProvider, useAuth } from '../lib/AuthContext';
+import { amplifyClient, isAmplifyReady } from '../lib/amplify';
 
-function RootLayoutNav() {
+function InitialLayout() {
+  const { session, loading } = useAuth();
   const segments = useSegments();
-  const { session, loading, error, isInitialized } = useAuth();
-  const navigationState = useRootNavigationState();
+  const router = useRouter();
 
   useEffect(() => {
-    console.log('RootLayoutNav state:', {
-      navigationKey: navigationState?.key,
-      loading,
-      isInitialized,
-      session: !!session,
-      segments,
-      error
-    });
-  }, [navigationState?.key, loading, isInitialized, session, segments, error]);
+    const initAmplify = async () => {
+      try {
+        const ready = await isAmplifyReady();
+        if (ready && amplifyClient?.models) {
+          console.log('Available amplifyClient.models:', Object.keys(amplifyClient.models));
+        }
+      } catch (err) {
+        console.error('Error initializing Amplify:', err);
+      }
+    };
+
+    initAmplify();
+  }, []);
 
   useEffect(() => {
-    if (!navigationState?.key || loading || !isInitialized) return;
+    if (loading) return;
 
     const inAuthGroup = segments[0] === 'auth';
-    const inTabsGroup = segments[0] === '(tabs)';
-    
-    console.log('Navigation logic:', { session: !!session, inAuthGroup, inTabsGroup, segments });
-    
-    // Only redirect if user is not authenticated and not in auth group
-    if (!session && !inAuthGroup) {
-      console.log('Redirecting to sign-in - user not authenticated');
-      router.replace('/auth/sign-in');
-    } 
-    // Only redirect if user is authenticated and in auth group (not in tabs)
-    else if (session && inAuthGroup) {
-      console.log('Redirecting to recipes - user authenticated but in auth group');
+
+    if (session && inAuthGroup) {
+      // User is signed in and in auth group, redirect to main app
       router.replace('/(tabs)/recipes');
+    } else if (!session && !inAuthGroup) {
+      // User is not signed in and not in auth group, redirect to sign in
+      router.replace('/auth/sign-in');
     }
-    // Allow authenticated users to stay in tabs group and navigate freely
-  }, [session, segments, navigationState?.key, loading, isInitialized]);
-
-  if (!navigationState?.key || loading || !isInitialized) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color="#007AFF" />
-        <Text style={{ marginTop: 16, color: '#666' }}>
-          {!navigationState?.key ? 'Initializing navigation...' : 
-           !isInitialized ? 'Initializing auth...' : 'Loading...'}
-        </Text>
-      </View>
-    );
-  }
-
-  if (error) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
-        <Text style={{ fontSize: 18, color: '#FF4081', textAlign: 'center', marginBottom: 20 }}>
-          Authentication Error
-        </Text>
-        <Text style={{ fontSize: 16, color: '#666', textAlign: 'center' }}>
-          {error}
-        </Text>
-      </View>
-    );
-  }
+  }, [session, loading, segments]);
 
   return (
-    <Stack>
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen name="auth" options={{ headerShown: false }} />
-    </Stack>
+    <Stack
+      screenOptions={{
+        headerShown: false,
+      }}
+    />
   );
 }
 
-export default function RootLayout() {
+export default function AppLayout() {
   return (
     <AuthProvider>
-      <SafeAreaProvider>
-        <RootLayoutNav />
-      </SafeAreaProvider>
+      <InitialLayout />
     </AuthProvider>
   );
 }

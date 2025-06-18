@@ -20,7 +20,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { uploadData } from 'aws-amplify/storage';
 import type { Schema } from '../../amplify/data/resource';
 
-type Recipe = Schema['Recipe']['type'];
+type Recipe = Schema['Recipe'];
 
 export default function EditRecipeScreen() {
   const { id } = useLocalSearchParams();
@@ -55,7 +55,15 @@ export default function EditRecipeScreen() {
       }
 
       try {
-        const result = await amplifyClient.models.Recipe.get({ id: id as string });
+        // Check if Amplify models are available
+        if (!amplifyClient?.models || !(amplifyClient.models as any).Recipe) {
+          console.log('⚠️ Amplify Recipe model not available');
+          setError('Recipe backend not configured');
+          setLoading(false);
+          return;
+        }
+        
+        const result = await (amplifyClient.models as any).Recipe.get({ id: id as string });
         if (result.data) {
           const recipeData = result.data;
           setRecipe(recipeData);
@@ -63,9 +71,18 @@ export default function EditRecipeScreen() {
           setImage(recipeData.imageUrl || null);
           setCategory(recipeData.category || '');
           
-          // Parse ingredients and instructions
+          // Parse ingredients and instructions with error handling
           console.log('Raw ingredients from DB:', recipeData.ingredients);
-          const parsedIngredients = recipeData.ingredients ? JSON.parse(recipeData.ingredients) : [{ name: '', quantity: '', unit: '' }];
+          let parsedIngredients;
+          try {
+            parsedIngredients = recipeData.ingredients ? JSON.parse(recipeData.ingredients) : [{ name: '', quantity: '', unit: '' }];
+          } catch (error) {
+            console.log('Failed to parse ingredients as JSON, treating as plain text');
+            // If JSON parsing fails, treat as plain text and split by lines
+            parsedIngredients = recipeData.ingredients
+              ? recipeData.ingredients.split('\n').filter(Boolean).map((ing: string) => ({ name: ing.trim(), quantity: '', unit: '' }))
+              : [{ name: '', quantity: '', unit: '' }];
+          }
           console.log('Parsed ingredients:', parsedIngredients);
           
           // Parse ingredient string into quantity, unit, and name
@@ -106,7 +123,17 @@ export default function EditRecipeScreen() {
           console.log('Formatted ingredients:', formattedIngredients);
           setIngredients(formattedIngredients);
           
-          const parsedInstructions = recipeData.instructions ? JSON.parse(recipeData.instructions) : [''];
+          // Parse instructions with error handling
+          let parsedInstructions;
+          try {
+            parsedInstructions = recipeData.instructions ? JSON.parse(recipeData.instructions) : [''];
+          } catch (error) {
+            console.log('Failed to parse instructions as JSON, treating as plain text');
+            // If JSON parsing fails, treat as plain text and split by lines
+            parsedInstructions = recipeData.instructions
+              ? recipeData.instructions.split('\n').filter(Boolean)
+              : [''];
+          }
           setInstructions(Array.isArray(parsedInstructions) ? parsedInstructions : ['']);
           
           // Handle tags
@@ -213,7 +240,13 @@ export default function EditRecipeScreen() {
       }
 
       // Update recipe
-      await amplifyClient.models.Recipe.update({
+      // Check if Amplify models are available
+      if (!amplifyClient?.models || !(amplifyClient.models as any).Recipe) {
+        setError('Recipe backend not configured');
+        return;
+      }
+      
+      await (amplifyClient.models as any).Recipe.update({
         id: recipe.id,
         name: title.trim(),
         imageUrl: finalImageUrl,

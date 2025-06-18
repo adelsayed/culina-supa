@@ -1028,4 +1028,59 @@ export const dummyRecipes = [
     ],
     imageUrl: 'https://source.unsplash.com/random/400x300/?chickenstrips',
   },
-]; 
+  // Italian Recipes Added
+  {
+    id: '51',
+    name: 'Authentic Margherita Pizza',
+    ingredients: [
+      '500g 00 flour',
+      '325ml warm water',
+      '10g fine sea salt',
+      '3g active dry yeast',
+      '400g San Marzano tomatoes, crushed',
+      '200g fresh mozzarella di bufala',
+      'Fresh basil leaves',
+      'Extra virgin olive oil'
+    ],
+    instructions: [
+      'Dissolve yeast in warm water and let stand for 5 minutes until foamy',
+      'Mix flour and salt in a large bowl, create a well in the center',
+      'Pour yeast mixture into the well and mix until a shaggy dough forms',
+      'Knead on floured surface for 10 minutes until smooth and elastic',
+      'Place in oiled bowl, cover, and rise for 1-2 hours until doubled',
+      'Divide dough into 4 portions and let rest 30 minutes',
+      'Preheat oven to maximum temperature with pizza stone inside',
+      'Roll out dough very thin, spread crushed tomatoes leaving 1cm border',
+      'Tear mozzarella into pieces and distribute evenly',
+      'Drizzle with olive oil and sprinkle with coarse salt',
+      'Slide onto hot pizza stone and bake 8-12 minutes until bubbly',
+      'Remove and immediately top with fresh basil leaves'
+    ],
+    imageUrl: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=800&h=600&fit=crop'
+  },
+  {
+    id: '52',
+    name: 'Classic Spaghetti Carbonara',
+    ingredients: [
+      '400g spaghetti',
+      '200g guanciale or pancetta, diced',
+      '4 large egg yolks',
+      '1 whole egg',
+      '100g Pecorino Romano cheese, finely grated',
+      'Freshly cracked black pepper'
+    ],
+    instructions: [
+      'Bring large pot of salted water to boil for pasta',
+      'Cook guanciale in large skillet over medium heat until crispy',
+      'Reserve rendered fat in pan, remove guanciale and set aside',
+      'In bowl, whisk together egg yolks, whole egg, grated Pecorino, and black pepper',
+      'Cook spaghetti until al dente according to package directions',
+      'Reserve 1 cup pasta cooking water before draining',
+      'Add hot drained pasta to skillet with guanciale fat',
+      'Remove from heat and immediately add egg mixture, tossing vigorously',
+      'Add pasta water gradually while tossing to create creamy sauce',
+      'Stir in crispy guanciale and additional Pecorino'
+    ],
+    imageUrl: 'https://images.unsplash.com/photo-1621996346565-e3dbc353d2e5?w=800&h=600&fit=crop'
+  }
+];

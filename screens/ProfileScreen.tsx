@@ -16,6 +16,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../lib/AuthContext';
 import { useUserProfile } from '../hooks/useUserProfile';
 import { calculateWeightGoalProgress, getProgressMotivation, formatTimelineText, getBMIColor } from '../utils/progressTracking';
+import DietaryPreferencesSection from './DietaryPreferencesSection';
+
+interface AISettings {
+  geminiApiKey: string;
+  aiModel: 'gemini_2_0_flash' | 'gemini_1_5_pro' | 'gemini_1_5_flash';
+  smartMealPlanningEnabled: boolean;
+  smartRecommendationsEnabled: boolean;
+}
 
 export default function ProfileScreen() {
   const { session, signOut } = useAuth();
@@ -59,6 +67,54 @@ export default function ProfileScreen() {
     targetWeight: '',
     dailyCalorieTarget: '',
   });
+
+  // AI Settings state
+  const [aiSettings, setAiSettings] = useState({
+    geminiApiKey: '',
+    aiModel: 'gemini_2_0_flash',
+    smartMealPlanningEnabled: false,
+    smartRecommendationsEnabled: false,
+  });
+  const [aiSettingsSaving, setAiSettingsSaving] = useState(false);
+  const [aiSettingsSaved, setAiSettingsSaved] = useState(false);
+  const [aiSettingsError, setAiSettingsError] = useState<string | null>(null);
+
+  // Sync AI settings with profile
+  React.useEffect(() => {
+    if (profile) {
+      setAiSettings({
+        geminiApiKey: profile.geminiApiKey || '',
+        aiModel: profile.aiModel || 'gemini_2_0_flash',
+        smartMealPlanningEnabled: !!profile.smartMealPlanningEnabled,
+        smartRecommendationsEnabled: !!profile.smartRecommendationsEnabled,
+      });
+    }
+  }, [profile]);
+
+  // Save AI settings handler
+  const handleSaveAiSettings = async () => {
+    setAiSettingsSaving(true);
+    setAiSettingsError(null);
+    setAiSettingsSaved(false);
+    try {
+      const success = await updateProfile({
+        geminiApiKey: aiSettings.geminiApiKey,
+        aiModel: aiSettings.aiModel as 'gemini_2_0_flash' | 'gemini_1_5_pro' | 'gemini_1_5_flash',
+        smartMealPlanningEnabled: aiSettings.smartMealPlanningEnabled,
+        smartRecommendationsEnabled: aiSettings.smartRecommendationsEnabled,
+      });
+      if (success) {
+        setAiSettingsSaved(true);
+        setTimeout(() => setAiSettingsSaved(false), 2000);
+      } else {
+        setAiSettingsError('Failed to save AI settings.');
+      }
+    } catch (err: any) {
+      setAiSettingsError('Failed to save AI settings.');
+    } finally {
+      setAiSettingsSaving(false);
+    }
+  };
 
   // Always call hooks before any return
   if (!session || !session.user) {
@@ -507,6 +563,105 @@ export default function ProfileScreen() {
           </View>
         </View>
 
+        {/* AI Settings */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>AI Settings</Text>
+          
+          {/* Gemini API Key Input */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Google Gemini API Key</Text>
+            <TextInput
+              style={styles.input}
+              value={aiSettings.geminiApiKey}
+              onChangeText={(text) => setAiSettings((prev) => ({ ...prev, geminiApiKey: text }))}
+              placeholder="Enter your Gemini API key"
+              secureTextEntry
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+          </View>
+
+          {/* Model Selection */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Gemini Model</Text>
+            <View style={styles.optionGrid}>
+              {[
+                { value: 'gemini_2_0_flash' as const, label: 'Gemini 2.0 Flash' },
+                { value: 'gemini_1_5_pro' as const, label: 'Gemini 1.5 Pro' },
+                { value: 'gemini_1_5_flash' as const, label: 'Gemini 1.5 Flash' }
+              ].map((option) => (
+                <TouchableOpacity
+                  key={option.value}
+                  style={[
+                    styles.optionButton,
+                    aiSettings.aiModel === option.value && styles.selectedOption
+                  ]}
+                  onPress={() => setAiSettings((prev) => ({
+                    ...prev,
+                    aiModel: option.value
+                  }))}
+                >
+                  <Text style={[
+                    styles.optionText,
+                    aiSettings.aiModel === option.value && styles.selectedOptionText
+                  ]}>
+                    {option.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+
+          {/* Smart Features */}
+          <View style={styles.settingRow}>
+            <Text style={styles.settingLabel}>Enable Smart Meal Planning</Text>
+            <Switch
+              value={aiSettings.smartMealPlanningEnabled}
+              onValueChange={(value) => setAiSettings((prev) => ({
+                ...prev,
+                smartMealPlanningEnabled: value
+              }))}
+              trackColor={{ false: '#767577', true: '#81b0ff' }}
+              thumbColor={aiSettings.smartMealPlanningEnabled ? '#007AFF' : '#f4f3f4'}
+            />
+          </View>
+
+          <View style={styles.settingRow}>
+            <Text style={styles.settingLabel}>Enable Smart Recommendations</Text>
+            <Switch
+              value={aiSettings.smartRecommendationsEnabled}
+              onValueChange={(value) => setAiSettings((prev) => ({
+                ...prev,
+                smartRecommendationsEnabled: value
+              }))}
+              trackColor={{ false: '#767577', true: '#81b0ff' }}
+              thumbColor={aiSettings.smartRecommendationsEnabled ? '#007AFF' : '#f4f3f4'}
+            />
+          </View>
+
+          {/* Save Button */}
+          <View style={styles.saveContainer}>
+            <TouchableOpacity
+              style={[styles.saveButton, aiSettingsSaving && styles.saveButtonDisabled]}
+              onPress={handleSaveAiSettings}
+              disabled={aiSettingsSaving}
+            >
+              <Text style={styles.saveButtonText}>
+                {aiSettingsSaving ? 'Saving...' : 'Save AI Settings'}
+              </Text>
+            </TouchableOpacity>
+            {aiSettingsError && (
+              <Text style={styles.errorText}>{aiSettingsError}</Text>
+            )}
+            {aiSettingsSaved && (
+              <Text style={styles.successText}>AI settings saved!</Text>
+            )}
+          </View>
+        </View>
+
+        {/* Dietary Preferences */}
+        <DietaryPreferencesSection profile={profile} updateProfile={updateProfile} />
+
         {/* Sign Out */}
         <View style={styles.section}>
           <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
@@ -521,11 +676,11 @@ export default function ProfileScreen() {
         )}
       </ScrollView>
 
-      {/* Health Data Modal */}
       <Modal
         visible={showHealthModal}
         animationType="slide"
         presentationStyle="pageSheet"
+        onRequestClose={() => setShowHealthModal(false)}
       >
         <SafeAreaView style={styles.modalContainer}>
           <View style={styles.modalHeader}>
@@ -847,6 +1002,35 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderRadius: 8,
     alignItems: 'center',
+  },
+  saveContainer: {
+    marginTop: 24,
+    marginBottom: 8,
+    alignItems: 'center',
+  },
+  saveButton: {
+    backgroundColor: '#2563eb',
+    borderRadius: 24,
+    paddingVertical: 14,
+    paddingHorizontal: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#2563eb',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 2,
+    minWidth: 180,
+  },
+  saveButtonDisabled: {
+    backgroundColor: '#93c5fd',
+  },
+  successText: {
+    color: '#34C759',
+    fontSize: 14,
+    marginTop: 8,
+    textAlign: 'center',
+    fontWeight: '600',
   },
   signOutText: {
     color: '#fff',

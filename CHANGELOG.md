@@ -1,330 +1,273 @@
-# Changelog
-## 3.4.5 - Enhanced Profile Phase 2: Goals & Progress Tracking (2025-06-14)
-- **Goal Setting Interface:** Added weight goals (lose, maintain, gain) to health data form
-- **Progress Tracking System:** Created comprehensive progress tracking utilities with timelines
-- **Enhanced Health Dashboard:** Added goal progress display with current/target weight and timeline
-- **Smart Calorie Calculator:** Automatic calorie target calculation based on BMR and weight goals
-- **Visual Enhancements:** Color-coded BMI display and motivational progress messages
-- **Timeline Estimates:** Calculate realistic timelines for weight goals with safe rates
-- **Progress Motivation:** Dynamic motivational messages based on goal progress
+# Culina App Changelog
 
-## 3.4.4 - Enhanced Profile Phase 1: Health Data and Calculations (2025-06-14)
-- **Health Calculation Utilities:** Created comprehensive BMI, BMR, and calorie calculation functions
-- **Enhanced useUserProfile Hook:** Added health metrics calculation and profile completeness tracking
-- **Enhanced Profile Screen:** Added health summary dashboard with BMI, calories, and macro targets
-- **Health Data Form Screen:** Created dedicated HealthDataScreen for comprehensive health data input
-- **Enhanced Profile Schema:** Added comprehensive health data fields (age, weight, height, gender, activity level)
-- **Health Goals:** Added weight goals, calorie targets, and macro targets (protein, carbs, fat)
-- **Dietary Preferences:** Added dietary restrictions, allergies, disliked ingredients, and cuisine preferences
-- **AI Integration:** Added OpenAI API key storage, model selection, and smart features toggles
-- **Updated PRD:** Enhanced user profile requirements with AI-powered features
-- **Implementation Plan:** Created comprehensive roadmap for enhanced profile features
+## [2025-06-18] Recipe Import Bug Fixes & AI Service Improvements
 
-## 3.4.3 - Enhanced Shopping List Ingredient Parsing and Delete Recipe (2025-06-14)
-- **Enhanced Ingredient Parsing:** Completely rewrote ingredient parsing algorithm to handle complex cases:
-  - Supports fractions (1/2, 1/4, 2/3) and mixed numbers (1 1/2)
-  - Handles ranges (2-3 cloves) using average values
-  - Parses multi-word ingredients correctly ("6 cups vegetable broth")
-  - Removes descriptors (chopped, diced, fresh) for cleaner ingredient names
-  - Normalizes units to standard forms (tablespoons → tbsp, grams → g)
-  - Special handling for "to taste" ingredients
-- **Improved Categorization:** Added comprehensive ingredient categorization with:
-  - UAE/Middle Eastern ingredients (sumac, za'atar, labneh, halloumi, hammour)
-  - New categories: Beverages, Snacks & Sweets, Household items
-  - Enhanced produce, dairy, meat, and pantry keyword recognition
-  - Updated shopping order for better store navigation
-- **Recipe Management:** Implemented delete recipe functionality with confirmation dialog and API cleanup.
+### 🐛 **Critical Bug Fixes**
+- **Fixed AI Recipe Import**: Resolved issue where recipe import from URL using AI was failing due to incorrect API key access pattern
+- **Corrected API Key Path**: Fixed [`useAIServices`](hooks/useAIServices.ts) hook to access `profile.geminiApiKey` directly instead of `profile.settings.geminiApiKey`
+- **Updated Gemini API Endpoint**: Upgraded from deprecated `gemini-pro` to newer `gemini-2.0-flash-exp` model for better performance
+- **Enhanced Error Handling**: Added proper null safety checks to prevent TypeScript errors when AI model is unavailable
 
-## 3.4.2 - Enhanced My Recipes List with Search, Sort, and Improved UI (2025-06-14)
-- Added search functionality to filter recipes by name, ingredients, or tags.
-- Implemented favorites toggle and filter to show only favorite recipes.
-- Added sorting options: Recent, A-Z, Z-A, and Favorites with segmented control UI.
-- Enhanced recipe cards to display category, tags, and quick action buttons (edit/delete/favorite).
-- Added tag filtering with visual tag chips for easy browsing.
-- Improved layout and spacing for better user experience.
-- Fixed recipe edit screen to properly load ingredients from both string array and object formats.
-- Added intelligent ingredient parsing to extract quantity, unit, and name from ingredient strings.
+### 🔧 **Technical Improvements**
+- **API Key Consistency**: Aligned API key access pattern across all components to use `profile.geminiApiKey` consistently
+- **Better Error Messages**: Enhanced error handling for AI service unavailability with user-friendly messages
+- **Type Safety**: Added null checks to prevent runtime errors when AI services are not initialized
 
-## 3.4.1 - S3 Recipe Image Upload and Display Fixes (2025-06-14)
-- Fixed S3 image upload path to use `public/users/...` for compatibility with Amplify Storage public access.
-- Set `contentType: 'image/jpeg'` on image uploads to ensure browser and app rendering.
-- Fixed React Native recipe details screen to use the correct S3 public image URL.
-- Removed all debug and console log statements from recipe and shopping list screens.
-- Added cache-busting and URL correctness checks during troubleshooting.
+### 🚀 **Recipe Import Features**
+- **URL Import**: AI-powered recipe extraction from any recipe website URL
+- **Text Import**: Manual recipe text parsing with intelligent ingredient and instruction detection
+- **Smart Extraction**: Advanced AI prompting for accurate recipe data extraction from web content
+- **Dual Import Modes**: Tab-based interface for both URL and text-based recipe imports
 
-## 3.4.0 - Enhanced Shopping List Management (Completed)
+### 📱 **User Experience**
+- **Loading States**: Clear visual feedback during recipe import process
+- **Error Recovery**: Helpful error messages with suggestions for alternative import methods
+- **Smart Fallbacks**: Automatic fallback to text import when URL extraction fails
 
-### Features
-- **Shopping List Backend Integration:**
-  - Replaced mock data with real Amplify ShoppingListItem model integration
-  - Connected "Generate from Meal Plan" to create persistent shopping list items
-  - Added "Add to Shopping List" functionality from recipe detail screens
-  - Real-time data synchronization across app sessions
+## Version 2.0.0 - Modern UI Redesign (December 16, 2025)
 
-- **Enhanced Shopping List UI:**
-  - Individual item deletion with X icons next to each item
-  - Smart clear options - single button with context-aware choices
-  - Consolidated clear functionality (Clear Completed vs Clear All) into one button
-  - Added confirmation dialogs for all destructive actions
-  - Progress tracking with real item counts
+### 🎨 **Major UI/UX Improvements**
 
-- **Improved User Experience:**
-  - Fixed loading state issues - shopping list always shows content
-  - Added debug information panel for development troubleshooting
-  - Enhanced error handling and user feedback
-  - Auto-refresh shopping list data when navigating to screen
+#### **Home Screen Redesign**
+- ✨ **Dynamic Personalized Greeting**: Time-based greetings with user's name
+  - "Good Morning, [Name]" (12am-12pm) ☀️
+  - "Good Afternoon, [Name]" (12pm-6pm) 🌤️  
+  - "Good Evening, [Name]" (6pm-12am) 🌙
+- 🎯 **Compact Hero Section**: Reduced height by 60% for better content visibility
+- 📱 **Mobile-Optimized Layout**: Fixed element cutoff issues on smaller screens
+- 💫 **Feature Badges**: AI-Powered, Personalized, Quick & Easy highlights
 
-### Technical Improvements
-- Created comprehensive `useShoppingList` hook for shopping list management
-- Added ingredient parsing and categorization from recipes
-- Implemented batch operations for meal plan to shopping list generation
-- Enhanced error handling with graceful fallbacks
-- Removed dependency on mock data for production-ready functionality
+#### **Recipe Cards Complete Redesign**
+- 🖼️ **Image-Free Design**: Removed images for faster loading and cleaner look
+- 📏 **Fixed Height Cards**: Consistent 260px height for perfect alignment
+- 📱 **Horizontal Scrolling**: Smooth card browsing with snap-to behavior
+- 🎨 **Modern Card Layout**:
+  - Cuisine badge with blue styling
+  - Compact recipe summary (name, description, metrics)
+  - Prominent action buttons at bottom
+- 📊 **Enhanced Metrics**: Color-coded icons for calories, time, and difficulty
+- 🔤 **Improved Typography**: Better font sizes and spacing hierarchy
 
-### Bug Fixes
-- **Fixed Shopping List Loading:** Resolved infinite loading state issues
-- **Fixed Add to Shopping List:** Recipe ingredients now properly added to shopping list
-- **Fixed Data Persistence:** Shopping list items now persist across app sessions
-- **Fixed Navigation:** Shopping list refreshes properly when accessed from other screens
+#### **AI Recipe Recommendations**
+- ✏️ **Edit Prompt Feature**: "Customize" button to modify AI instructions
+- 💾 **Persistent Custom Prompts**: Saved to user profile across sessions
+- 🔄 **Better Error Handling**: Enhanced JSON parsing with multiple fallbacks
+- 🚀 **Infinite Loop Fix**: Resolved useEffect and re-rendering issues
+- 📝 **Summary Cards**: Show key info only, full details in modal
 
-### Files Added/Modified
-- `hooks/useShoppingList.ts` - Complete shopping list management
-- `app/(tabs)/shopping-list.tsx` - Enhanced UI with backend integration
-- `app/recipes/[id].tsx` - Added shopping list integration
-- `utils/shoppingListGenerator.ts` - Enhanced ingredient parsing
+### 🏗️ **Technical Improvements**
 
-## 3.3.0 - Profile Management and Shopping List Integration (Completed)
+#### **Design System**
+- 🎨 **Centralized Design Tokens**: Created comprehensive design system
+- 🌈 **Consistent Color Palette**: Professional blue/green color scheme
+- 📐 **Typography Scale**: Standardized font sizes and weights
+- 🪟 **Shadow System**: Multiple elevation levels for depth
+- 📱 **Component Styles**: Reusable button, card, and input styles
 
-### Features
-- **Profile Management System:**
-  - Added comprehensive UserProfile model with personal info, settings, and preferences
-  - Created useUserProfile hook for profile data management
-  - Enhanced ProfileScreen with edit functionality and settings management
-  - Profile information: username, display name, bio, profile image support
-  - Settings: push notifications, email notifications, privacy controls
-  - Preferences: units (metric/imperial), theme (light/dark/system), language
+#### **Performance Enhancements**
+- ⚡ **Faster Loading**: Removed image dependencies from recipe cards
+- 🔧 **Optimized Hooks**: Fixed infinite useEffect loops
+- 💾 **Better State Management**: Improved React component lifecycle
+- 📱 **Mobile Performance**: Reduced memory usage and improved scrolling
 
-- **Shopping List Enhancements:**
-  - Integrated shopping list generation from meal plan data
-  - Connected "Generate from Meal Plan" functionality to actual meal plan entries
-  - Improved ingredient aggregation and categorization
-  - Enhanced type safety and error handling
-  - Progress tracking and completion functionality
+#### **User Experience**
+- 🎯 **Progressive Disclosure**: Summary cards → detailed modal
+- 👆 **Touch-Friendly**: Properly sized buttons and interactive elements
+- 📱 **Responsive Design**: Works across all screen sizes
+- 🔄 **Smooth Interactions**: Enhanced scrolling and transitions
 
-- **Enhanced Navigation:**
-  - Added Profile tab to main navigation with person icon
-  - Removed Todo List tab from bottom navigation
-  - Fixed recipe detail navigation after route restructuring
+### 🛠️ **Bug Fixes**
+- ✅ Fixed recipe card button visibility issues
+- ✅ Resolved home header content cutoff
+- ✅ Fixed infinite API call loops
+- ✅ Improved JSON parsing reliability
+- ✅ Enhanced error handling for AI responses
 
-### Technical Implementation
-- Created `hooks/useUserProfile.ts` for profile data management
-- Added UserProfile model to Amplify schema with comprehensive fields
-- Enhanced shopping list with real meal plan data integration
-- Fixed Amplify schema TypeScript validation errors
-- Improved error handling and user feedback throughout
+### 📱 **Mobile-First Improvements**
+- 🎯 **Compact Layout**: Optimized for small screens
+- 👆 **Better Touch Targets**: Accessibility-compliant button sizes
+- 📱 **Responsive Text**: Readable on all device sizes
+- 🔄 **Smooth Scrolling**: Enhanced horizontal card browsing
 
-### UI/UX Improvements
-- **Profile Screen:** Professional mobile-first design with sections for info, settings, and actions
-- **Edit Mode:** In-place editing with save/cancel functionality and form validation
-- **Settings Management:** Toggle switches for notifications and privacy preferences
-- **User Feedback:** Success/error alerts and loading states for all operations
-- **Responsive Design:** Optimized for mobile screens with proper touch targets
+## [2025-06-16] Achievement System & Home Screen Dashboard
 
-### Files Added/Modified
-- `hooks/useUserProfile.ts` - Profile data management hook
-- `amplify/data/resource.ts` - Added UserProfile model
-- `screens/ProfileScreen.tsx` - Complete profile management interface
-- `app/(tabs)/shopping-list.tsx` - Enhanced with meal plan integration
-- `app/(tabs)/_layout.tsx` - Added profile tab, removed todos tab
-- `app/recipes/[id].tsx` - Moved from tabs directory and fixed imports
-- `lib/navigation.ts` - Updated recipe navigation paths
+### 🏆 **Complete Achievement System Implementation**
+- **Achievement Framework**: Comprehensive gamification system with 15+ achievements across 5 categories
+- **Real-time Tracking**: Automatic tracking of user actions (recipes created, meals planned, AI usage)
+- **Achievement Badges**: Beautiful visual badges with rarity levels (common, rare, epic, legendary)
+- **Animated Notifications**: Slide-in notifications when achievements are unlocked with confetti-style celebrations
+- **Progress Tracking**: Shows progress toward next achievement with visual progress bars
+- **Points System**: Achievement points system with total score tracking
 
-### Bug Fixes
-- Fixed recipe detail screen navigation after route restructuring
-- Resolved TypeScript validation errors in Amplify schema
-- Fixed module resolution issues after file moves
-- Improved sign-out functionality with better error handling
+### 🎯 **Achievement Categories & Examples**
+- **Cooking**: "Chef in the Making" (first recipe), "Recipe Master" (10 recipes), "Culinary Expert" (25 recipes)
+- **Planning**: "Planning Ahead" (first meal), "Weekly Warrior" (7-day streak), "Planning Legend" (30-day streak)
+- **AI Integration**: "AI Pioneer" (first AI recipe), "AI Enthusiast" (5 AI suggestions), "AI Master" (20 AI uses)
+- **Health**: "Healthy Week" (7 days nutrition goals), "Balanced Eater" (macro targets hit)
+- **Social**: "Recipe Sharer" (first shared recipe), "Week Planner" (complete week planned)
 
-## 3.2.0 - Meal Planner UI Implementation (Completed)
+### 🔧 **Technical Achievement Features**
+- **[`utils/achievementSystem.ts`](utils/achievementSystem.ts)**: Core achievement logic, validation, and progress calculation
+- **[`hooks/useAchievements.ts`](hooks/useAchievements.ts)**: React hook for achievement state management and persistence
+- **[`components/dashboard/AchievementBadges.tsx`](components/dashboard/AchievementBadges.tsx)**: UI components with badges, notifications, and modal
+- **Local Storage**: AsyncStorage persistence for achievements and user statistics
+- **Smart Notifications**: Non-intrusive achievement unlock celebrations
 
-### Features
-- **Meal Planner Tab:**
-  - Weekly calendar view with date navigation
-  - Daily meal slots for 5 meal types (Breakfast, Morning Snack, Lunch, Afternoon Snack, Dinner)
-  - Color-coded meal slots for easy visual organization
-  - Today/selected date highlighting
-  - Daily nutrition summary placeholder
-  - Action buttons for shopping list generation and week copying
+### 🎨 **Visual Achievement System**
+- **Badge Design**: Color-coded badges with icons and rarity indicators
+- **Progress Visualization**: Circular progress indicators and progress bars
+- **Animated Celebrations**: Smooth slide-in notifications with auto-dismiss
+- **Achievement Gallery**: Full modal view of all achievements with progress tracking
+- **Recent Unlocks**: Quick access to recently earned achievements
 
-- **Shopping List Tab:**
-  - Categorized shopping list display (Produce, Dairy, Meat & Seafood, Pantry)
-  - Progress tracking with completion percentage
-  - Check/uncheck items functionality
-  - Add custom items capability
-  - Clear completed items feature
-  - Generate from meal plan and share functionality
+### 🧠 **Smart Daily Suggestions System**
+- **Contextual Intelligence**: Time-aware suggestions that adapt throughout the day
+- **Weather Integration**: Mock weather-based recipe recommendations (soups for cold, salads for hot)
+- **Meal Planning Prompts**: Smart reminders for breakfast (6-10am), lunch (11-2pm), dinner (4-7pm)
+- **Recipe of the Day**: Random selection from user's saved recipes for inspiration
+- **Quick Meal Solutions**: "15-min dinners" suggestions for busy evening hours
+- **Day-Specific Tips**: Sunday meal prep, Monday motivation, weekend cooking ideas
+- **Multi-Type Suggestions**: Recipe recommendations, actionable prompts, cooking tips, and seasonal advice
 
-- **Enhanced Navigation:**
-  - Added meal planner and shopping list tabs to main navigation
-  - Proper tab icons using Ionicons
-  - Reorganized tab order for better user flow
+### 🕒 **Recently Viewed Recipes**
+- **Smart History Tracking**: Automatically tracks recipe views with timestamps
+- **Quick Access**: Horizontal scroll of recently viewed recipes with images and details
+- **Cook Again Feature**: One-tap meal planning integration with intelligent meal type detection
+- **Visual Recipe Cards**: Rich cards with images, categories, calories, cook time, and difficulty
+- **Persistent Storage**: AsyncStorage-based history that survives app restarts
+- **Smart Cleanup**: Automatic deduplication and intelligent ordering by recency
 
-### UI/UX Improvements
-- **Visual Design:** Color-coded meal types for intuitive organization
-- **Interactive Elements:** Touch-friendly buttons and navigation
-- **Progress Indicators:** Visual feedback for shopping list completion
-- **Empty States:** Helpful guidance when no data is present
-- **Responsive Layout:** Optimized for mobile screens
+### 🎯 **Enhanced Dashboard Intelligence**
+- **[`components/dashboard/SmartSuggestions.tsx`](components/dashboard/SmartSuggestions.tsx)**: AI-powered contextual recommendations engine
+- **[`components/dashboard/RecentlyViewed.tsx`](components/dashboard/RecentlyViewed.tsx)**: Recipe history tracking and quick access component
+- **Refresh Mechanisms**: Auto-refresh suggestions every 30 minutes + manual refresh buttons
+- **Priority-Based Sorting**: Intelligent suggestion ranking based on context and user needs
+- **Cross-Component Integration**: Seamless navigation between dashboard sections and app features
 
-### Technical Implementation
-- Created reusable date utility functions for calendar navigation
-- Implemented mock data structure for development and testing
-- Added proper TypeScript typing for all components
-- Responsive design with proper styling and spacing
+### ⚡ **Quick Wins Implementation - Professional Polish**
+- **Real Profile Integration**: Connected user nutrition goals to dashboard stats display
+- **Professional Loading States**: Animated skeleton screens for all dashboard components
+- **Comprehensive Error Handling**: User-friendly error messages with retry functionality
+- **Recipe View Tracking**: Automatic recently viewed recipes tracking integration
+- **Visual Feedback**: Loading indicators, error states, and empty states throughout app
 
-### Files Added
-- `app/(tabs)/meal-planner.tsx` - Main meal planning interface
-- `app/(tabs)/shopping-list.tsx` - Shopping list management
-- `components/RecipePicker.tsx` - Modal for selecting recipes to add to meal plans
-- `components/MealPlanDatePicker.tsx` - Modal for adding recipes to meal plan from recipe details
-- `hooks/useMealPlanner.ts` - Custom hook for meal planning state management
-- Enhanced `app/(tabs)/_layout.tsx` - Updated navigation with new tabs
-- Enhanced `app/(tabs)/recipes/[id].tsx` - Added meal plan integration and nutrition display
+### 🎨 **Enhanced User Experience Components**
+- **[`components/shared/LoadingStates.tsx`](components/shared/LoadingStates.tsx)**: Animated skeleton screens for all dashboard sections
+- **[`components/shared/ErrorStates.tsx`](components/shared/ErrorStates.tsx)**: Comprehensive error handling with Toast notifications and retry options
+- **Smart Fallbacks**: Graceful degradation when data is unavailable or loading
+- **Consistent Design**: All components follow centralized design system patterns
 
-### Recipe Details Enhancements
-- **Add to Meal Plan Integration:** Direct integration from recipe details to meal planner
-- **Auto-Navigation:** After adding, user is automatically taken to the meal planner tab and week
-- **Nutrition Information Display:** Shows calories, protein, carbs, fat with visual formatting
-- **Recipe Metadata:** Displays servings, prep time, cook time, and difficulty level
-- **Meal Plan Date Picker:** Intuitive interface for selecting date, meal type, and servings
+### 🤖 **AI Recipe Enhancement - Restaurant-Quality Generation**
+- **Enhanced Recipe Structure**: Detailed ingredients with precise quantities, units, and preparation notes
+- **Professional Instructions**: Step-by-step cooking with timing, temperatures, and pro tips
+- **Accurate Nutrition**: Real calorie, protein, carb, and fat calculations per serving
+- **Multiple Recipe Types**: General, quick meals, seasonal, cuisine-specific, health-focused options
+- **Recipe Validation**: Ensures completeness and practicality for home cooking
 
-## 3.1.0 - Subscription Management and Loading Fixes (Completed)
+### 🎯 **Advanced AI Features Implementation**
+- **[`utils/enhancedAIPrompts.ts`](utils/enhancedAIPrompts.ts)**: Professional-grade prompt engineering for restaurant-quality recipes
+- **[`components/EnhancedAIRecipes.tsx`](components/EnhancedAIRecipes.tsx)**: Complete UI overhaul with categorized recipe generation
+- **Smart Recipe Generation**: Context-aware prompts based on meal type, season, cuisine, and health goals
+- **Nutrition Integration**: Auto-calculated nutrition information with detailed breakdown
+- **Professional Presentation**: Enhanced recipe display with timing, tips, and detailed instructions
 
-### Features
-- **Subscription Management System:**
-  - Created centralized subscription manager to prevent MaxSubscriptionsReachedError
-  - Added subscription tracking with unique keys and automatic cleanup
-  - Implemented subscription limit monitoring (AWS limit: 20 subscriptions)
-  - Added debug utilities for monitoring subscription usage and detecting leaks
+### 📊 **Recipe Quality Improvements**
+- **Structured Ingredients**: Quantity + Unit + Name + Preparation notes format
+- **Detailed Instructions**: Step numbers, timing, temperature, and professional tips
+- **Comprehensive Nutrition**: Accurate macronutrient calculations per serving
+- **Recipe Categories**: Quick meals (15-30min), seasonal ingredients, cuisine-specific, health-optimized
+- **Validation System**: Ensures all generated recipes are complete and practical
 
-- **Enhanced Error Handling:**
-  - Improved recipe details page with proper auth state checking
-  - Added comprehensive error states with user-friendly messages and retry functionality
-  - Enhanced Amplify configuration validation and error handling
-  - Added loading states with descriptive messages
+### � **Major Home Screen Enhancement - "Today's Dashboard"**
+- **Complete Dashboard Redesign**: Transformed home screen from static welcome page to functional command center
+- **Today's Meal Plan**: Shows planned breakfast, lunch, dinner with quick add meal buttons
+- **Nutrition Progress**: Real-time tracking of calories, protein, and daily targets with visual progress indicators
+- **Quick Actions Hub**: One-tap access to Add Recipe, Plan Meals, Shopping List, and Browse Recipes
+- **Personal Stats**: Cooking streak counter, recipe collection count, and achievement tracking
+- **Smart Integration**: Seamlessly connects with meal planner and recipe management features
 
-### Technical Improvements
-- Created `lib/subscriptionManager.ts` for centralized subscription tracking
-- Added `lib/subscriptionDebug.ts` for development monitoring
-- Created `hooks/useAmplifySubscription.ts` for safe subscription patterns
-- Enhanced AuthContext with better error handling and initialization states
-- Improved component lifecycle management with proper cleanup
+### 🎯 **New Dashboard Components**
+- **[`TodaysMealPlan.tsx`](components/dashboard/TodaysMealPlan.tsx)**: Interactive meal planning preview with meal type icons and calorie display
+- **[`QuickStats.tsx`](components/dashboard/QuickStats.tsx)**: Nutrition progress circles and personal achievement metrics
+- **[`QuickActions.tsx`](components/dashboard/QuickActions.tsx)**: Grid of quick-access buttons for core app features
+- **[`useDashboardData.ts`](hooks/useDashboardData.ts)**: Custom hook for aggregating dashboard data from multiple sources
 
-### Bug Fixes
-- **Fixed MaxSubscriptionsReachedError:** Proper cleanup of GraphQL subscriptions
-- **Fixed Recipe Details Auth Error:** Added auth state checking before data loading
-- **Fixed Subscription Leaks:** Implemented proper unsubscribe patterns
-- **Fixed Race Conditions:** Added mount guards and proper dependency tracking
+### 🎨 **Enhanced User Experience**
+- **Contextual Navigation**: Quick access to meal planner when meals are missing
+- **Progress Visualization**: Circular progress indicators for nutrition goals
+- **Smart Empty States**: Helpful "Add meal" prompts for unplanned meals
+- **Consistent Design**: Uses centralized design system for cohesive visual experience
+- **Responsive Layout**: Optimized for different screen sizes and orientations
 
-### Current Issues (Being Debugged)
-- App stuck on loading screen - investigating auth initialization
-- Temporarily disabled subscription manager to isolate loading issue
-- Added debug logging to track auth and navigation state
+## [2025-06-16] Critical Bug Fixes & AI Integration Improvements
 
-### Files Modified
-- `screens/MyRecipesWithAmplify.tsx` - Enhanced subscription management
-- `screens/TodoList.tsx` - Improved subscription cleanup
-- `app/(tabs)/recipes/[id].tsx` - Added auth checking and error handling
-- `lib/AuthContext.tsx` - Enhanced error handling and debug logging
-- `app/_layout.tsx` - Added debug logging and improved loading states
+### 🐛 **Major Bug Fixes**
+- **Fixed AI Meal Suggestions Add Button**: Resolved issue where "+ add" buttons in meal planner AI suggestions were not working
+- **Fixed JSON Parsing Crashes**: Eliminated "JSON Parse error: Unexpected character" crashes in MyRecipes screen
+- **Database Integration**: AI-generated recipes now properly save to database before being added to meal plans
+- **Data Format Consistency**: Standardized ingredient and instruction storage format across all recipe sources
 
-## 3.0.0 - Navigation and Authentication Improvements
+### 🔧 **Technical Improvements**
+- **Robust Error Handling**: Added try-catch blocks around JSON parsing operations to prevent crashes
+- **Fallback Data Handling**: App gracefully handles both JSON arrays and plain strings for ingredients
+- **Loading States**: Added visual feedback (spinners) when saving AI recipes to database
+- **Database Persistence**: AI suggestions now create real recipe records instead of mock objects
 
-### Features
-- **Expo Router Integration:**
-  - Migrated to file-based routing system using Expo Router
-  - Created organized route groups for tabs and auth screens
-  - Implemented proper navigation guards for authenticated routes
-  - Added type-safe routing with TypeScript support
+### 🎯 **User Experience Enhancements**
+- **Seamless AI Integration**: AI-generated recipes now work exactly like manually created recipes
+- **Visual Feedback**: Users see loading indicators when AI recipes are being saved
+- **Improved Reliability**: Meal planner AI suggestions consistently add recipes to meal plans
+- **Search Functionality**: Fixed search to work properly with AI-generated recipe data
 
-- **Authentication Improvements:**
-  - Enhanced authentication state management
-  - Added proper initialization states to prevent race conditions
-  - Improved session handling with better error states
-  - Added loading states during authentication checks
-  - Implemented proper cleanup for subscriptions and mounted states
+### 🚀 **AI Recipe Caching & Quota Management**
+- **Intelligent Caching System**: AI recipe recommendations are now cached for 24 hours to preserve user's API quota
+- **Manual Refresh Control**: Users can manually refresh recommendations when they want new suggestions
+- **Cache Status Display**: Shows when recipes were cached and reminds users about quota savings
+- **Clear Cache Option**: Users can clear cached data if they want to force new recommendations
 
-- **UI/UX Improvements:**
-  - Added loading indicators during state transitions
-  - Improved error handling and user feedback
-  - Better handling of safe areas using react-native-safe-area-context
-  - Smoother navigation transitions between auth and main screens
+### 🏗️ **Technical Implementation**
+- **Custom Hook**: Created [`useAIRecipeCache`](hooks/useAIRecipeCache.ts) for persistent local storage management
+- **AsyncStorage Integration**: Recipes are stored locally using React Native AsyncStorage
+- **User-Specific Caching**: Each user's cache is isolated by their user ID
+- **Cache Validation**: Automatic expiry after 24 hours with cleanup of expired data
 
-### Technical Improvements
-- Proper TypeScript types for navigation and auth states
-- Better state management in AuthContext
-- Improved component lifecycle management
-- Enhanced error handling throughout the app
-- Better code organization with file-based routing
+### 🎨 **Enhanced UI/UX**
+- **Cache Information**: Shows "📱 Cached X hours ago • Saves your AI quota" in the subtitle
+- **Smart Button Text**: Changes from "Discover New" to "Refresh" when cached data exists
+- **Quota Reminder**: Empty state reminds users that caching saves their AI quota
+- **Clear Cache Button**: Red-styled button to remove cached data when needed
 
-### Bug Fixes
-- Fixed authentication initialization issues
-- Resolved race conditions in recipe loading
-- Fixed safe area handling in navigation
-- Prevented memory leaks from unmanaged subscriptions
+### 🔧 **Navigation Improvements**
+- **Home as Default**: Users now land on Home screen after login instead of Recipes tab
+- **Better User Journey**: More intuitive flow from authentication to main dashboard
 
-## 2.0.0 - Amplify Integration and Recipe Management
+## [2025-06-17] Navigation & Home Tab Improvements
+- Added Home tab as the default/first tab in the bottom navigation bar.
+- Set Home as the initial route after login for a more intuitive user experience.
+- Removed the top hero Home icon for a cleaner UI.
+- Clarified navigation behavior and fixed tab order to ensure Home is always shown first after login.
 
-This release adds AWS Amplify integration and recipe management features.
+## [2025-06-17] UI/UX & AI Suggestions Improvements
+- Restored refresh and prompt edit icons: Brought back per-meal slot controls for AI meal suggestions, allowing users to regenerate suggestions and edit prompts directly from each slot.
+- Meal planning card enhancements: Added meal type icons, nutrition info, and recipe image thumbnails to each meal slot for improved clarity and engagement.
+- AI suggestions reliability: Fixed issues with AI suggestions not loading due to profile settings or missing toggles; improved error handling and defensive coding for AI recipe parsing.
+- Profile settings integration: Ensured Gemini API key and smart recommendations toggles are respected and persist after schema updates.
+- 'Coming Soon' card improvements: Clarified the Smart Meal Planning progress card and outlined next steps for user engagement and waitlist functionality.
 
-### Features
-- **AWS Amplify Integration:**
-  - Set up AWS Amplify backend with Data API
-  - Configured Amplify authentication to work alongside Supabase
-  - Created Recipe and Todo schemas in Amplify
-  - Added TypeScript support for Amplify models
-- **Recipe Management:**
-  - Added Recipe data model with support for name, ingredients, instructions, and images
-  - Created MyRecipesWithAmplify component for displaying user-specific recipes
-  - Implemented real-time recipe updates using Amplify DataStore subscriptions
-  - Added user-specific recipe filtering and data ownership
-  - Created data migration script for seeding initial recipe data
-- **Code Organization:**
-  - Separated Amplify configuration into dedicated files
-  - Added TypeScript types for all Amplify models
-  - Implemented proper error handling for recipe operations
-  - Added loading states and error states for recipe views
+---
 
-### Technical Improvements
-- Added proper TypeScript support throughout the application
-- Implemented data seeding mechanism for first-time users
-- Added JSON string conversion for complex data types (ingredients, instructions)
-- Improved error handling and loading states
+## Previous Versions
 
-## 1.0.0 - Initial Release
+### Version 1.x.x
+- Basic recipe management functionality
+- Initial AI integration
+- Profile and dietary preferences
+- Shopping list features
 
-This release introduces the core authentication features for the React Native application using Supabase.
+---
 
-### Features
-- **Supported Sign-in Methods:**
-  - Email and Password
-  - GitHub OAuth
-  - Google OAuth
-  - Facebook OAuth
-- **Supabase Integration:** Set up the Supabase client with AsyncStorage and SecureStore for persistent and encrypted sessions.
-- **Email/Password Authentication:** Implemented user sign-in and sign-up with email and password.
-- **OAuth Social Login:** Added GitHub and Google OAuth authentication, including deep linking for callback handling.
-- **Deep Linking:** Configured custom URL scheme (com.supabase://auth/callback) for handling authentication redirects across iOS and Android.
-- **Authentication Screens:** Created dedicated screens for:
-  - `AuthScreen.tsx`: For user sign-in with email/password and social logins.
-  - `SignUpScreen.tsx`: For new user registration.
-  - `ConfirmationScreen.tsx`: To display a success message after email confirmation via deep link.
-- **Profile Screen:** Implemented `ProfileScreen.tsx` to display authenticated user's email and `full_name` from Google OAuth metadata, attempting to split into first/last names.
-- **Forgot Password:** Added functionality to send password reset emails via a 'Forgot Password?' link.
-- **Individual Loading States:** Implemented separate loading states for each authentication button to improve UI responsiveness.
+## Contributing
+This changelog follows [Keep a Changelog](https://keepachangelog.com/) format.
 
-### Fixes
-- **Deep Linking URL Correction:** Fixed a typo in the deep linking URL (from `om.supabase` to `com.supabase`) to ensure proper redirection.
-- **User Metadata Display:** Adjusted `ProfileScreen.tsx` to correctly display `full_name` from Google OAuth data, as `first_name` and `last_name` were not directly provided.
-- **AuthContext `setSession` Exposure:** Ensured `setSession` function is properly exposed and utilized by the `AuthContext` to manage user sessions.
-- **Error Handling:** Improved user-facing error messages for login failures.
+## Support
+For issues or feature requests, please contact the development team.

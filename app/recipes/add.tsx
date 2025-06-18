@@ -17,17 +17,35 @@ import ModalSelector from 'react-native-modal-selector';
 
 import { amplifyClient, getGuestCredentials } from '../../lib/amplify';
 import { useAuth } from '../../lib/AuthContext';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { uploadData } from 'aws-amplify/storage';
 
 export default function AddRecipeScreen() {
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
+  const params = useLocalSearchParams();
+  
+  const [title, setTitle] = useState(params.title as string || '');
+  const [description, setDescription] = useState(params.description as string || '');
   const [image, setImage] = useState<string | null>(null);
   const [video, setVideo] = useState<string | null>(null);
-  const [ingredients, setIngredients] = useState([{ name: '', quantity: '', unit: '' }]);
-  const [instructions, setInstructions] = useState(['']);
-  const [category, setCategory] = useState('');
+  const [ingredients, setIngredients] = useState(() => {
+    if (params.ingredients) {
+      // Convert AI recipe ingredients format to app format
+      return (params.ingredients as string).split('\n').map(ingredient => ({
+        name: ingredient.trim(),
+        quantity: '',
+        unit: ''
+      }));
+    }
+    return [{ name: '', quantity: '', unit: '' }];
+  });
+  const [instructions, setInstructions] = useState(() => {
+    if (params.instructions) {
+      // Convert AI recipe instructions format to app format
+      return (params.instructions as string).split('\n').map(instruction => instruction.trim());
+    }
+    return [''];
+  });
+  const [category, setCategory] = useState(params.category as string || '');
   const [tags, setTags] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -124,7 +142,7 @@ export default function AddRecipeScreen() {
     setLoading(true);
     try {
       // First create the recipe to get an ID
-      const recipe = await amplifyClient.models.Recipe.create({
+      const recipe = await (amplifyClient.models as any).Recipe.create({
         name: title.trim(),
         imageUrl: '', // Will update after image upload
         ingredients: JSON.stringify(ingredients),
@@ -147,7 +165,7 @@ export default function AddRecipeScreen() {
         if (uploadedUrl) {
           finalImageUrl = uploadedUrl;
           // Update recipe with the S3 image URL
-          await amplifyClient.models.Recipe.update({
+          await (amplifyClient.models as any).Recipe.update({
             id: recipe.data.id,
             imageUrl: finalImageUrl
           });
@@ -165,7 +183,17 @@ export default function AddRecipeScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ padding: 20 }}>
-      <Text style={styles.header}>Add Recipe</Text>
+      {/* Header with Back Button */}
+      <View style={styles.headerContainer}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => router.back()}
+        >
+          <Ionicons name="arrow-back" size={24} color="#007AFF" />
+        </TouchableOpacity>
+        <Text style={styles.header}>Add Recipe</Text>
+        <View style={{ width: 24 }} /> {/* Spacer for alignment */}
+      </View>
 
       {/* Basic Info */}
       <Text style={styles.section}>Basic Info</Text>
@@ -297,22 +325,88 @@ export default function AddRecipeScreen() {
       />
 
       {/* Actions */}
-      <TouchableOpacity style={styles.submitBtn} onPress={handleSubmit} disabled={loading}>
-        {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitText}>Save Recipe</Text>}
-      </TouchableOpacity>
+      <View style={styles.actionButtons}>
+        <TouchableOpacity
+          style={styles.cancelBtn}
+          onPress={() => router.back()}
+        >
+          <Text style={styles.cancelText}>Cancel</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity
+          style={[styles.submitBtn, loading && styles.submitBtnDisabled]}
+          onPress={handleSubmit}
+          disabled={loading}
+        >
+          {loading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.submitText}>Save Recipe</Text>
+          )}
+        </TouchableOpacity>
+      </View>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
-  header: { fontSize: 24, fontWeight: 'bold', marginBottom: 16, textAlign: 'center' },
+  container: {
+    flex: 1,
+    backgroundColor: '#fff'
+  },
+  headerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  backButton: {
+    padding: 8,
+    borderRadius: 20,
+  },
+  header: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    flex: 1,
+  },
   section: { fontSize: 18, fontWeight: '600', marginTop: 18, marginBottom: 8 },
   input: { borderWidth: 1, borderColor: '#ddd', borderRadius: 8, padding: 10, marginBottom: 10, backgroundColor: '#fafbfc' },
   ingredientRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
   addBtn: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
   mediaBtn: { flexDirection: 'row', alignItems: 'center', padding: 8, borderWidth: 1, borderColor: '#ddd', borderRadius: 8, marginRight: 12 },
   previewImg: { width: 48, height: 48, borderRadius: 8, marginLeft: 8 },
-  submitBtn: { backgroundColor: '#007AFF', padding: 16, borderRadius: 8, alignItems: 'center', marginTop: 24 },
-  submitText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
+  actionButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 24,
+    gap: 12,
+  },
+  cancelBtn: {
+    flex: 1,
+    padding: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    backgroundColor: '#f1f1f1',
+  },
+  cancelText: {
+    color: '#666',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  submitBtn: {
+    flex: 1,
+    backgroundColor: '#007AFF',
+    padding: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  submitBtnDisabled: {
+    backgroundColor: '#007AFF80',
+  },
+  submitText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16
+  },
 });

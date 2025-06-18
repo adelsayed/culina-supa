@@ -16,6 +16,8 @@ import { useMealPlanner } from '../../hooks/useMealPlanner';
 import { useShoppingList } from '../../hooks/useShoppingList';
 import { generateShoppingList } from '../../utils/shoppingListGenerator';
 import { getWeekStartDate } from '../../utils/dateUtils';
+import SmartShoppingList from '../../components/shoppinglist/SmartShoppingList';
+import AutoShoppingGenerator from '../../components/shoppinglist/AutoShoppingGenerator';
 import type { Schema } from '../../amplify/data/resource';
 
 type ShoppingListItem = Schema['ShoppingListItem']['type'];
@@ -40,20 +42,12 @@ const ShoppingListScreen: React.FC = () => {
   const [newItemName, setNewItemName] = useState('');
   const [showAddItem, setShowAddItem] = useState(false);
   const [generatingList, setGeneratingList] = useState(false);
-
-  // Debug current state
-  console.log('Shopping List Screen State:', {
-    loading,
-    error,
-    shoppingListKeys: Object.keys(shoppingList),
-    totalItems: Object.values(shoppingList).flat().length,
-    progress
-  });
+  const [showSmartGenerator, setShowSmartGenerator] = useState(false);
+  const [useSmartView, setUseSmartView] = useState(true);
 
   // Refresh shopping list when screen becomes focused
   useEffect(() => {
     const unsubscribe = () => {
-      console.log('Shopping list screen focused, refreshing data');
       refreshShoppingList();
     };
     
@@ -179,8 +173,29 @@ const ShoppingListScreen: React.FC = () => {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Shopping List</Text>
+        <View style={styles.headerLeft}>
+          <Text style={styles.headerTitle}>Shopping List</Text>
+          <TouchableOpacity
+            style={styles.viewToggle}
+            onPress={() => setUseSmartView(!useSmartView)}
+          >
+            <Text style={styles.viewToggleText}>
+              {useSmartView ? 'Smart' : 'Basic'}
+            </Text>
+            <Ionicons
+              name={useSmartView ? 'sparkles' : 'list'}
+              size={16}
+              color="#007AFF"
+            />
+          </TouchableOpacity>
+        </View>
         <View style={styles.headerActions}>
+          <TouchableOpacity
+            style={styles.headerButton}
+            onPress={() => setShowSmartGenerator(true)}
+          >
+            <Ionicons name="construct" size={24} color="#10B981" />
+          </TouchableOpacity>
           <TouchableOpacity
             style={styles.headerButton}
             onPress={() => setShowAddItem(!showAddItem)}
@@ -230,127 +245,132 @@ const ShoppingListScreen: React.FC = () => {
         </View>
       )}
 
-      {/* Shopping List - Always show content */}
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {Object.entries(shoppingList).map(([category, items]) => {
-          if (items.length === 0) return null;
-          
-          return (
-            <View key={category} style={styles.categorySection}>
-              <Text style={styles.categoryTitle}>{category}</Text>
-              {items.map((item: any) => (
-                <View key={item.id} style={[
-                  styles.shoppingItem,
-                  item.isCompleted && styles.completedItem,
-                ]}>
-                  <TouchableOpacity
-                    style={styles.itemContent}
-                    onPress={() => toggleItemCompleted(item.id)}
-                  >
-                    <View style={styles.itemLeft}>
-                      <View style={[
-                        styles.checkbox,
-                        item.isCompleted && styles.checkedBox,
-                      ]}>
-                        {item.isCompleted && (
-                          <Ionicons name="checkmark" size={16} color="#fff" />
-                        )}
-                      </View>
-                      <View style={styles.itemInfo}>
-                        <Text style={[
-                          styles.itemName,
-                          item.isCompleted && styles.completedText,
+      {/* Main Content - Smart or Basic View */}
+      {useSmartView ? (
+        <SmartShoppingList weekStartDate={getWeekStartDate(new Date())} />
+      ) : (
+        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+          {Object.entries(shoppingList).map(([category, items]) => {
+            if (items.length === 0) return null;
+            
+            return (
+              <View key={category} style={styles.categorySection}>
+                <Text style={styles.categoryTitle}>{category}</Text>
+                {items.map((item: any) => (
+                  <View key={item.id} style={[
+                    styles.shoppingItem,
+                    item.isCompleted && styles.completedItem,
+                  ]}>
+                    <TouchableOpacity
+                      style={styles.itemContent}
+                      onPress={() => toggleItemCompleted(item.id)}
+                    >
+                      <View style={styles.itemLeft}>
+                        <View style={[
+                          styles.checkbox,
+                          item.isCompleted && styles.checkedBox,
                         ]}>
-                          {item.itemName}
-                        </Text>
-                        <Text style={[
-                          styles.itemQuantity,
-                          item.isCompleted && styles.completedText,
-                        ]}>
-                          {item.quantity} {item.unit}
-                        </Text>
+                          {item.isCompleted && (
+                            <Ionicons name="checkmark" size={16} color="#fff" />
+                          )}
+                        </View>
+                        <View style={styles.itemInfo}>
+                          <Text style={[
+                            styles.itemName,
+                            item.isCompleted && styles.completedText,
+                          ]}>
+                            {item.itemName}
+                          </Text>
+                          <Text style={[
+                            styles.itemQuantity,
+                            item.isCompleted && styles.completedText,
+                          ]}>
+                            {item.quantity} {item.unit}
+                          </Text>
+                        </View>
                       </View>
-                    </View>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.deleteButton}
-                    onPress={() => {
-                      Alert.alert(
-                        'Delete Item',
-                        `Remove "${item.itemName}" from your shopping list?`,
-                        [
-                          { text: 'Cancel', style: 'cancel' },
-                          {
-                            text: 'Delete',
-                            style: 'destructive',
-                            onPress: async () => {
-                              const success = await deleteShoppingListItem(item.id);
-                              if (!success) {
-                                Alert.alert('Error', 'Failed to delete item');
-                              }
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.deleteButton}
+                      onPress={() => {
+                        Alert.alert(
+                          'Delete Item',
+                          `Remove "${item.itemName}" from your shopping list?`,
+                          [
+                            { text: 'Cancel', style: 'cancel' },
+                            {
+                              text: 'Delete',
+                              style: 'destructive',
+                              onPress: async () => {
+                                const success = await deleteShoppingListItem(item.id);
+                                if (!success) {
+                                  Alert.alert('Error', 'Failed to delete item');
+                                }
+                              },
                             },
-                          },
-                        ]
-                      );
-                    }}
-                  >
-                    <Ionicons name="close" size={20} color="#FF3B30" />
-                  </TouchableOpacity>
-                </View>
-              ))}
-            </View>
-          );
-        })}
+                          ]
+                        );
+                      }}
+                    >
+                      <Ionicons name="close" size={20} color="#FF3B30" />
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </View>
+            );
+          })}
 
-        {/* Empty State */}
-        {Object.values(shoppingList).every((items) => items.length === 0) && (
-          <View style={styles.emptyState}>
-            <Ionicons name="basket-outline" size={64} color="#ccc" />
-            <Text style={styles.emptyStateTitle}>Your shopping list is empty</Text>
-            <Text style={styles.emptyStateText}>
-              Add items manually or generate a list from your meal plan
-            </Text>
+          {/* Empty State */}
+          {Object.values(shoppingList).every((items) => items.length === 0) && (
+            <View style={styles.emptyState}>
+              <Ionicons name="basket-outline" size={64} color="#ccc" />
+              <Text style={styles.emptyStateTitle}>Your shopping list is empty</Text>
+              <Text style={styles.emptyStateText}>
+                Add items manually or generate a list from your meal plan
+              </Text>
+              <TouchableOpacity
+                style={styles.generateButton}
+                onPress={() => setShowAddItem(true)}
+              >
+                <Text style={styles.generateButtonText}>Add First Item</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* Action Buttons */}
+          <View style={styles.actionButtons}>
             <TouchableOpacity
-              style={styles.generateButton}
-              onPress={() => setShowAddItem(true)}
+              style={styles.actionButton}
+              onPress={generateFromMealPlan}
+              disabled={generatingList}
             >
-              <Text style={styles.generateButtonText}>Add First Item</Text>
+              {generatingList ? (
+                <ActivityIndicator size="small" color="#007AFF" />
+              ) : (
+                <Ionicons name="refresh-outline" size={20} color="#007AFF" />
+              )}
+              <Text style={styles.actionButtonText}>
+                {generatingList ? 'Generating...' : 'Generate from Meal Plan'}
+              </Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity style={styles.actionButton}>
+              <Ionicons name="share-outline" size={20} color="#007AFF" />
+              <Text style={styles.actionButtonText}>Share List</Text>
             </TouchableOpacity>
           </View>
-        )}
+        </ScrollView>
+      )}
 
-        {/* Action Buttons */}
-        <View style={styles.actionButtons}>
-          <TouchableOpacity
-            style={styles.actionButton}
-            onPress={generateFromMealPlan}
-            disabled={generatingList}
-          >
-            {generatingList ? (
-              <ActivityIndicator size="small" color="#007AFF" />
-            ) : (
-              <Ionicons name="refresh-outline" size={20} color="#007AFF" />
-            )}
-            <Text style={styles.actionButtonText}>
-              {generatingList ? 'Generating...' : 'Generate from Meal Plan'}
-            </Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity style={styles.actionButton}>
-            <Ionicons name="share-outline" size={20} color="#007AFF" />
-            <Text style={styles.actionButtonText}>Share List</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Debug Info */}
-        {__DEV__ && (
-          <View style={styles.debugInfo}>
-            <Text style={styles.debugText}>
-              Debug: {loading ? 'Loading' : 'Loaded'} | Items: {Object.values(shoppingList).flat().length} | Error: {error || 'None'}
-            </Text>
-          </View>
-        )}
-      </ScrollView>
+      {/* Auto Shopping Generator Modal */}
+      <AutoShoppingGenerator
+        visible={showSmartGenerator}
+        onClose={() => setShowSmartGenerator(false)}
+        onGenerated={() => {
+          // Refresh the shopping list after generation
+          refreshShoppingList();
+        }}
+      />
     </SafeAreaView>
   );
 };
@@ -601,17 +621,6 @@ const styles = StyleSheet.create({
     color: '#856404',
     flex: 1,
   },
-  debugInfo: {
-    padding: 16,
-    backgroundColor: '#f0f0f0',
-    margin: 16,
-    borderRadius: 8,
-  },
-  debugText: {
-    fontSize: 12,
-    color: '#666',
-    fontFamily: 'monospace',
-  },
   itemContent: {
     flex: 1,
   },
@@ -619,6 +628,26 @@ const styles = StyleSheet.create({
     padding: 12,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  viewToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 12,
+    gap: 4,
+  },
+  viewToggleText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#007AFF',
   },
 });
 

@@ -8,29 +8,36 @@ import {
   SafeAreaView,
   ActivityIndicator,
   Alert,
+  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../lib/AuthContext';
-import { 
-  getWeekStartDate, 
-  getWeekDates, 
-  formatDateForDisplay, 
+import {
+  getWeekStartDate,
+  getWeekDates,
+  formatDateForDisplay,
   isToday,
   navigateWeek,
-  getRelativeDateDescription 
+  getRelativeDateDescription
 } from '../../utils/dateUtils';
 import { useMealPlanner } from '../../hooks/useMealPlanner';
+import { useAchievements } from '../../hooks/useAchievements';
 import RecipePicker from '../../components/RecipePicker';
 import type { Schema } from '../../amplify/data/resource';
+import AIMealSuggestions from '../../components/AIMealSuggestions';
+import AIWeeklyPlanner from '../../components/mealplanner/AIWeeklyPlanner';
+import NutritionBalancer from '../../components/mealplanner/NutritionBalancer';
 
 type Recipe = Schema['Recipe']['type'];
 type MealType = 'breakfast' | 'snack1' | 'lunch' | 'snack2' | 'dinner';
 
 const MealPlannerScreen: React.FC = () => {
   const { session } = useAuth();
+  const { incrementStat } = useAchievements();
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showRecipePicker, setShowRecipePicker] = useState(false);
   const [selectedMealType, setSelectedMealType] = useState<MealType>('breakfast');
+  const [showAIWeeklyPlanner, setShowAIWeeklyPlanner] = useState(false);
 
   const {
     weekMealPlan,
@@ -65,9 +72,12 @@ const MealPlannerScreen: React.FC = () => {
     setShowRecipePicker(true);
   };
 
-  const handleSelectRecipe = async (recipe: Recipe, servings: number) => {
-    const success = await addMealPlanEntry(selectedDate, selectedMealType, recipe, servings);
+  const handleSelectRecipe = async (recipe: Recipe, mealType: MealType, servings: number = 1) => {
+    const success = await addMealPlanEntry(selectedDate, mealType, recipe, servings);
     if (success) {
+      // Track achievement for meal planning
+      await incrementStat('meals_planned');
+      
       setShowRecipePicker(false);
     } else {
       Alert.alert('Error', 'Failed to add recipe to meal plan');
@@ -94,7 +104,103 @@ const MealPlannerScreen: React.FC = () => {
     );
   };
 
-  const selectedDayPlan = weekMealPlan.days.find(day => 
+  const handleAIWeeklyPlan = async (weekPlan: any[], clearExisting: boolean = false) => {
+    try {
+      let successCount = 0;
+      let totalMeals = 0;
+
+      // Clear existing meals if requested
+      if (clearExisting) {
+        for (const day of weekMealPlan.days) {
+          for (const mealType of ['breakfast', 'snack1', 'lunch', 'snack2', 'dinner'] as MealType[]) {
+            const meals = day.meals[mealType] || [];
+            for (const meal of meals) {
+              await removeMealPlanEntry(meal.id);
+            }
+          }
+        }
+      }
+
+      // Apply each day's meals to the meal planner
+      for (const dayPlan of weekPlan) {
+        const dayDate = dayPlan.date;
+        
+        // Add each meal type for this day
+        const mealTypes = [
+          { type: 'breakfast' as MealType, name: dayPlan.meals.breakfast },
+          { type: 'lunch' as MealType, name: dayPlan.meals.lunch },
+          { type: 'dinner' as MealType, name: dayPlan.meals.dinner },
+        ];
+
+        for (const meal of mealTypes) {
+          totalMeals++;
+          
+          // Create a virtual recipe entry for the AI-generated meal
+          const virtualRecipe = {
+            id: `ai-${Date.now()}-${Math.random()}`,
+            name: meal.name,
+            userId: session?.user?.id || '',
+            ingredients: '[]', // Empty for now
+            instructions: '[]', // Empty for now
+            servings: 1,
+            calories: Math.round(dayPlan.totalCalories / 3), // Rough estimate per meal
+            protein: Math.round(dayPlan.totalProtein / 3),
+            carbs: Math.round(dayPlan.totalCarbs / 3),
+            fat: Math.round(dayPlan.totalFat / 3),
+            prepTime: 30,
+            cookTime: 30,
+            difficulty: 'medium' as const,
+            category: 'AI Generated',
+            imageUrl: null,
+            tags: [],
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          };
+
+          // Add the meal to the planner
+          const success = await addMealPlanEntry(dayDate, meal.type, virtualRecipe, 1);
+          if (success) {
+            successCount++;
+          }
+        }
+      }
+
+      // Track achievement for successful meal planning
+      if (successCount > 0) {
+        await incrementStat('meals_planned');
+      }
+
+      // Show success/failure message
+      if (successCount === totalMeals) {
+        Alert.alert(
+          '🎉 Weekly Plan Applied!',
+          `Successfully added ${successCount} AI-generated meals to your weekly plan.`,
+          [{ text: 'Great!' }]
+        );
+      } else if (successCount > 0) {
+        Alert.alert(
+          '⚠️ Partial Success',
+          `Added ${successCount} of ${totalMeals} meals. Some meals may have failed to add.`,
+          [{ text: 'OK' }]
+        );
+      } else {
+        Alert.alert(
+          '❌ Plan Application Failed',
+          'Failed to add meals to your plan. Please try again.',
+          [{ text: 'Retry' }]
+        );
+      }
+    } catch (error) {
+      console.error('Error applying AI weekly plan:', error);
+      Alert.alert(
+        'Error',
+        'Failed to apply the weekly plan. Please try again.',
+        [{ text: 'OK' }]
+      );
+    }
+  };
+
+  const selectedDayPlan = weekMealPlan.days.find(day =>
     day.date.toDateString() === selectedDate.toDateString()
   );
 
@@ -120,14 +226,20 @@ const MealPlannerScreen: React.FC = () => {
           
           <View style={styles.headerCenter}>
             <Text style={styles.monthYear}>
-              {weekMealPlan.weekStartDate.toLocaleDateString('en-US', { 
-                month: 'long', 
-                year: 'numeric' 
+              {weekMealPlan.weekStartDate.toLocaleDateString('en-US', {
+                month: 'long',
+                year: 'numeric'
               })}
             </Text>
-            <TouchableOpacity onPress={navigateToToday} style={styles.todayButton}>
-              <Text style={styles.todayButtonText}>Today</Text>
-            </TouchableOpacity>
+            <View style={styles.headerButtons}>
+              <TouchableOpacity onPress={navigateToToday} style={styles.todayButton}>
+                <Text style={styles.todayButtonText}>Today</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => setShowAIWeeklyPlanner(true)} style={styles.aiButton}>
+                <Ionicons name="sparkles" size={12} color="#fff" />
+                <Text style={styles.aiButtonText}>AI Plan</Text>
+              </TouchableOpacity>
+            </View>
           </View>
           
           <TouchableOpacity onPress={navigateToNextWeek} style={styles.navButton}>
@@ -209,55 +321,89 @@ const MealPlannerScreen: React.FC = () => {
               { type: 'dinner' as MealType, name: 'Dinner', time: '7:00 PM', color: '#F5F5DC' },
             ].map((meal) => {
               const mealEntries = selectedDayPlan?.meals[meal.type] || [];
-              
+              const mealIcon = {
+                breakfast: 'cafe-outline',
+                snack1: 'nutrition-outline',
+                lunch: 'fast-food-outline',
+                snack2: 'ice-cream-outline',
+                dinner: 'restaurant-outline',
+              }[meal.type];
               return (
-                <View key={meal.type} style={[styles.mealSlot, { backgroundColor: meal.color }]}>
-                  <View style={styles.mealHeader}>
-                    <View>
-                      <Text style={styles.mealName}>{meal.name}</Text>
-                      <Text style={styles.mealTime}>{meal.time}</Text>
-                    </View>
-                    <TouchableOpacity 
-                      style={styles.addButton}
-                      onPress={() => handleAddRecipe(meal.type)}
-                    >
-                      <Ionicons name="add" size={24} color="#007AFF" />
-                    </TouchableOpacity>
-                  </View>
-                  
-                  {/* Recipe Entries or Empty State */}
-                  {mealEntries.length > 0 ? (
-                    <View style={styles.recipeEntries}>
-                      {mealEntries.map((entry) => (
-                        <View key={entry.id} style={styles.recipeEntry}>
-                          <View style={styles.recipeInfo}>
-                            <Text style={styles.recipeName}>{entry.recipe?.name || 'Unknown Recipe'}</Text>
-                            <Text style={styles.recipeDetails}>
-                              {entry.servings} serving{entry.servings !== 1 ? 's' : ''}
-                              {entry.recipe?.calories && ` • ${Math.round((entry.recipe.calories * (entry.servings || 1)))} cal`}
-                            </Text>
-                          </View>
-                          <TouchableOpacity 
-                            style={styles.removeButton}
-                            onPress={() => handleRemoveEntry(entry.id)}
-                          >
-                            <Ionicons name="close" size={20} color="#FF3B30" />
-                          </TouchableOpacity>
+                <View key={meal.type}>
+                  {/* AI Suggestion Card for Empty Slot */}
+                  {mealEntries.length === 0 && (
+                    <AIMealSuggestions
+                      selectedDate={selectedDate}
+                      mealType={meal.type}
+                      onSelectRecipe={handleSelectRecipe}
+                    />
+                  )}
+                  <View style={[styles.mealSlot, { backgroundColor: meal.color }]}> 
+                    <View style={styles.mealHeader}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <Ionicons name={mealIcon as any} size={22} color="#007AFF" style={{ marginRight: 8 }} />
+                        <View>
+                          <Text style={styles.mealName}>{meal.name}</Text>
+                          <Text style={styles.mealTime}>{meal.time}</Text>
                         </View>
-                      ))}
-                    </View>
-                  ) : (
-                    <View style={styles.emptyMealSlot}>
-                      <Ionicons name="restaurant-outline" size={32} color="#ccc" />
-                      <Text style={styles.emptyMealText}>No recipe planned</Text>
+                      </View>
                       <TouchableOpacity 
-                        style={styles.addRecipeButton}
+                        style={styles.addButton}
                         onPress={() => handleAddRecipe(meal.type)}
                       >
-                        <Text style={styles.addRecipeButtonText}>Add Recipe</Text>
+                        <Ionicons name="add" size={24} color="#007AFF" />
                       </TouchableOpacity>
                     </View>
-                  )}
+                    {/* Recipe Entries or Empty State */}
+                    {mealEntries.length > 0 ? (
+                      <View style={styles.recipeEntries}>
+                        {mealEntries.map((entry) => (
+                          <View key={entry.id} style={styles.recipeEntry}>
+                            {/* Recipe Image */}
+                            {entry.recipe?.imageUrl ? (
+                              <Image source={{ uri: entry.recipe.imageUrl }} style={{ width: 48, height: 48, borderRadius: 8, marginRight: 12 }} />
+                            ) : (
+                              <View style={{ width: 48, height: 48, borderRadius: 8, marginRight: 12, backgroundColor: '#eee', alignItems: 'center', justifyContent: 'center' }}>
+                                <Ionicons name="image-outline" size={24} color="#ccc" />
+                              </View>
+                            )}
+                            <View style={{ flex: 1 }}>
+                              <Text style={styles.recipeName}>{entry.recipe?.name || 'Unknown Recipe'}</Text>
+                              <Text style={styles.recipeDetails}>
+                                {entry.servings} serving{entry.servings !== 1 ? 's' : ''}
+                                {entry.recipe?.calories && ` • ${Math.round((entry.recipe.calories * (entry.servings || 1)))} cal`}
+                              </Text>
+                              {/* Nutrition Info */}
+                              {entry.recipe && (
+                                <Text style={{ fontSize: 12, color: '#888', marginTop: 2 }}>
+                                  {entry.recipe.protein ? `P: ${entry.recipe.protein}g ` : ''}
+                                  {entry.recipe.carbs ? `C: ${entry.recipe.carbs}g ` : ''}
+                                  {entry.recipe.fat ? `F: ${entry.recipe.fat}g` : ''}
+                                </Text>
+                              )}
+                            </View>
+                            <TouchableOpacity 
+                              style={styles.removeButton}
+                              onPress={() => handleRemoveEntry(entry.id)}
+                            >
+                              <Ionicons name="close" size={20} color="#FF3B30" />
+                            </TouchableOpacity>
+                            {/* Replace Button */}
+                            <TouchableOpacity
+                              style={{ marginLeft: 8, padding: 4 }}
+                              onPress={() => handleAddRecipe(meal.type)}
+                            >
+                              <Ionicons name="swap-horizontal" size={20} color="#007AFF" />
+                            </TouchableOpacity>
+                          </View>
+                        ))}
+                      </View>
+                    ) :
+                      <View style={styles.emptyMealSlot}>
+                        <Text style={styles.emptyMealText}>No recipes planned</Text>
+                      </View>
+                    }
+                  </View>
                 </View>
               );
             })}
@@ -297,6 +443,21 @@ const MealPlannerScreen: React.FC = () => {
           </View>
         )}
 
+        {/* Weekly Nutrition Balancer */}
+        {!loading && !error && (
+          <NutritionBalancer
+            weeklyNutrition={{
+              totalCalories: weekMealPlan.days.reduce((sum, day) => sum + day.nutrition.calories, 0),
+              totalProtein: weekMealPlan.days.reduce((sum, day) => sum + day.nutrition.protein, 0),
+              totalCarbs: weekMealPlan.days.reduce((sum, day) => sum + day.nutrition.carbs, 0),
+              totalFat: weekMealPlan.days.reduce((sum, day) => sum + day.nutrition.fat, 0),
+              daysPlanned: weekMealPlan.days.filter(day =>
+                Object.values(day.meals).some(meals => meals.length > 0)
+              ).length,
+            }}
+          />
+        )}
+
         {/* Action Buttons */}
         <View style={styles.actionButtons}>
           <TouchableOpacity style={styles.actionButton}>
@@ -315,9 +476,17 @@ const MealPlannerScreen: React.FC = () => {
       <RecipePicker
         visible={showRecipePicker}
         onClose={() => setShowRecipePicker(false)}
-        onSelectRecipe={handleSelectRecipe}
+        onSelectRecipe={(recipe, servings) => handleSelectRecipe(recipe, selectedMealType, servings)}
         mealType={selectedMealType}
         selectedDate={selectedDate}
+      />
+
+      {/* AI Weekly Planner Modal */}
+      <AIWeeklyPlanner
+        visible={showAIWeeklyPlanner}
+        onClose={() => setShowAIWeeklyPlanner(false)}
+        onPlanGenerated={handleAIWeeklyPlan}
+        weekStartDate={weekMealPlan.weekStartDate}
       />
     </SafeAreaView>
   );
@@ -372,6 +541,26 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   todayButtonText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  headerButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 4,
+  },
+  aiButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    backgroundColor: '#10B981',
+    borderRadius: 12,
+    gap: 4,
+  },
+  aiButtonText: {
     color: '#fff',
     fontSize: 12,
     fontWeight: '600',

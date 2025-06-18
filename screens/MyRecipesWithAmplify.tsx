@@ -6,9 +6,11 @@ import type { Schema } from '../amplify/data/resource';
 import { useAuth } from '../lib/AuthContext';
 import { dummyRecipes } from '../data/dummyRecipes';
 import { navigateToRecipe } from '../lib/navigation';
+import SimpleRecipeImport from '../components/recipe/SimpleRecipeImport';
+import { testAmplifyConnection } from '../utils/amplifyDiagnostic';
 // import { subscriptionManager } from '../lib/subscriptionManager'; // temporarily disabled
 
-type Recipe = Schema['Recipe']['type'];
+type Recipe = Schema['Recipe'];
 
 const RecipeItem: React.FC<{
   recipe: Recipe;
@@ -19,7 +21,26 @@ const RecipeItem: React.FC<{
 }> = ({ recipe, isFavorite, onToggleFavorite, onEdit, onDelete }) => {
   const [imageError, setImageError] = useState(false);
 
-  const ingredients = recipe.ingredients ? JSON.parse(recipe.ingredients) : [];
+  // Safely parse ingredients with error handling
+  let ingredients: string[] = [];
+  try {
+    if (recipe.ingredients) {
+      if (Array.isArray(recipe.ingredients)) {
+        ingredients = recipe.ingredients;
+      } else if (typeof recipe.ingredients === 'string') {
+        const parsed = JSON.parse(recipe.ingredients);
+        ingredients = Array.isArray(parsed) ? parsed : [recipe.ingredients];
+      }
+    }
+  } catch (error) {
+    // If JSON parsing fails, treat as plain string and split by lines
+    if (typeof recipe.ingredients === 'string') {
+      ingredients = (recipe.ingredients as string).split('\n').filter(Boolean);
+    } else if (Array.isArray(recipe.ingredients)) {
+      ingredients = recipe.ingredients;
+    }
+  }
+
   const tags = Array.isArray(recipe.tags) ? recipe.tags.filter((t): t is string => typeof t === 'string' && !!t) : [];
   const category = recipe.category || '';
 
@@ -102,6 +123,7 @@ const MyRecipesWithAmplify: React.FC = () => {
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const [sort, setSort] = useState<'recent' | 'az' | 'za' | 'favorites'>('recent');
   const [tagFilter, setTagFilter] = useState<string | null>(null);
+  const [showImportModal, setShowImportModal] = useState(false);
   const { session } = useAuth();
 
   // Toggle favorite for a recipe
@@ -129,7 +151,13 @@ const MyRecipesWithAmplify: React.FC = () => {
           style: 'destructive',
           onPress: async () => {
             try {
-              await amplifyClient.models.Recipe.delete({ id });
+              // Check if Amplify models are available
+              if (!amplifyClient?.models || !(amplifyClient.models as any).Recipe) {
+                Alert.alert('Error', 'Recipe backend not configured');
+                return;
+              }
+              
+              await (amplifyClient.models as any).Recipe.delete({ id });
               // Remove from favorites if it was favorited
               setFavorites(prev => prev.filter(fav => fav !== id));
               // Note: The subscription will automatically update the recipes list
@@ -166,6 +194,30 @@ const MyRecipesWithAmplify: React.FC = () => {
     }
   };
 
+  // Test Amplify connection
+  const handleTestConnection = async () => {
+    if (!session?.user?.id) {
+      Alert.alert('No User', 'Please sign in first');
+      return;
+    }
+    
+    console.log('Testing Amplify connection...');
+    const result = await testAmplifyConnection(session.user.id);
+    
+    if (result.success) {
+      Alert.alert(
+        'Connection Test ✅',
+        `Found ${result.totalRecipes} recipes in database.\nModels: ${result.models?.join(', ')}`
+      );
+    } else {
+      Alert.alert(
+        'Connection Test ❌',
+        `Error: ${(result.error as Error)?.message || 'Unknown error'}\nAmplify Client: ${result.amplifyClientExists ? 'Yes' : 'No'}`
+      );
+    }
+  };
+
+
   useEffect(() => {
     if (!session?.user?.id) {
       setLoading(false);
@@ -179,7 +231,17 @@ const MyRecipesWithAmplify: React.FC = () => {
     const loadRecipes = async () => {
       try {
         console.log("Loading recipes for user:", userId);
-        const existingRecipesResult = await amplifyClient.models.Recipe.list({
+        
+        // Check if Amplify models are available
+        if (!amplifyClient?.models || !(amplifyClient.models as any).Recipe) {
+          console.log('⚠️ Amplify Recipe model not available');
+          if (mounted) {
+            setLoading(false);
+          }
+          return;
+        }
+        
+        const existingRecipesResult = await (amplifyClient.models as any).Recipe.list({
           filter: { userId: { eq: userId } }
         });
 
@@ -190,17 +252,17 @@ const MyRecipesWithAmplify: React.FC = () => {
 
         // Set up subscription only if component is still mounted
         if (mounted) {
-          subscription = amplifyClient.models.Recipe.observeQuery({
+          subscription = (amplifyClient.models as any).Recipe.observeQuery({
             filter: { userId: { eq: userId } }
           }).subscribe({
-            next: ({ items }) => {
+            next: ({ items }: { items: any[] }) => {
               if (mounted) {
                 console.log("Received recipes:", items.length);
                 setRecipes(items);
                 setLoading(false);
               }
             },
-            error: (error) => {
+            error: (error: any) => {
               console.error('Subscription error:', error);
               if (mounted) {
                 setLoading(false);
@@ -229,18 +291,27 @@ const MyRecipesWithAmplify: React.FC = () => {
 
   const seedRecipes = async (userId: string) => {
     console.log("Checking if recipes need to be seeded...");
+    
+    // Check if Amplify models are available
+    if (!amplifyClient?.models || !(amplifyClient.models as any).Recipe) {
+      console.log('⚠️ Amplify Recipe model not available, skipping seeding');
+      return;
+    }
+    
     try {
       // Check if user already has recipes
-      const existingRecipesResult = await amplifyClient.models.Recipe.list({
+      const existingRecipesResult = await (amplifyClient.models as any).Recipe.list({
         filter: {
           userId: { eq: userId }
         }
       });
 
       if (existingRecipesResult.data.length === 0) {
-        console.log("No recipes found for user, seeding data...");
+        console.log("No recipes found for user, seeding dummy recipes...");
+        
+        // Seed dummy recipes
         for (const recipe of dummyRecipes) {
-          await amplifyClient.models.Recipe.create({
+          await (amplifyClient.models as any).Recipe.create({
             name: recipe.name,
             ingredients: JSON.stringify(recipe.ingredients),
             instructions: JSON.stringify(recipe.instructions),
@@ -248,6 +319,7 @@ const MyRecipesWithAmplify: React.FC = () => {
             userId: userId,
           });
         }
+        
         console.log("Seeding complete!");
       } else {
         console.log(`Found ${existingRecipesResult.data.length} existing recipes for user`);
@@ -266,7 +338,6 @@ const MyRecipesWithAmplify: React.FC = () => {
     );
   }
 
-
   if (recipes.length === 0 && !loading) {
     return (
       <View style={[styles.container, styles.centerContent]}>
@@ -274,6 +345,27 @@ const MyRecipesWithAmplify: React.FC = () => {
         <Text style={[styles.loadingText, { marginTop: 16 }]}>
           No recipes found. Your recipes will appear here.
         </Text>
+        
+        {/* Test Connection Button */}
+        <TouchableOpacity
+          style={{
+            marginTop: 20,
+            backgroundColor: '#007AFF',
+            borderRadius: 12,
+            paddingVertical: 12,
+            paddingHorizontal: 24,
+            flexDirection: 'row',
+            alignItems: 'center',
+            elevation: 3,
+          }}
+          onPress={handleTestConnection}
+        >
+          <Ionicons name="cloud-outline" size={24} color="#fff" />
+          <Text style={{ color: '#fff', fontWeight: 'bold', marginLeft: 8 }}>
+            Test Amplify Connection
+          </Text>
+        </TouchableOpacity>
+        
       </View>
     );
   }
@@ -282,12 +374,32 @@ const MyRecipesWithAmplify: React.FC = () => {
   let filteredRecipes = recipes.filter((recipe) => {
     const query = search.toLowerCase();
     const name = recipe.name?.toLowerCase() || '';
-    const ingredients = recipe.ingredients ? JSON.parse(recipe.ingredients).join(', ').toLowerCase() : '';
+    
+    // Safely parse ingredients for search
+    let ingredientsText = '';
+    try {
+      if (recipe.ingredients) {
+        if (Array.isArray(recipe.ingredients)) {
+          ingredientsText = recipe.ingredients.join(', ').toLowerCase();
+        } else if (typeof recipe.ingredients === 'string') {
+          const parsed = JSON.parse(recipe.ingredients);
+          ingredientsText = Array.isArray(parsed) ? parsed.join(', ').toLowerCase() : (recipe.ingredients as string).toLowerCase();
+        }
+      }
+    } catch (error) {
+      // If JSON parsing fails, use as plain string
+      if (typeof recipe.ingredients === 'string') {
+        ingredientsText = (recipe.ingredients as string).toLowerCase();
+      } else if (Array.isArray(recipe.ingredients)) {
+        ingredientsText = recipe.ingredients.join(', ').toLowerCase();
+      }
+    }
+    
     const tags = Array.isArray(recipe.tags) ? recipe.tags.join(', ').toLowerCase() : '';
     const matchesTag = tagFilter ? (Array.isArray(recipe.tags) && recipe.tags.includes(tagFilter)) : true;
     return (
       (name.includes(query) ||
-      ingredients.includes(query) ||
+      ingredientsText.includes(query) ||
       tags.includes(query)) && matchesTag
     );
   });
@@ -329,6 +441,13 @@ const MyRecipesWithAmplify: React.FC = () => {
           onPress={() => setShowFavoritesOnly(f => !f)}
         >
           <Ionicons name={showFavoritesOnly ? "heart" : "heart-outline"} size={28} color="#FF4081" />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={{ marginLeft: 8, backgroundColor: '#fff', borderRadius: 20, padding: 4, elevation: 2 }}
+          onPress={() => setShowImportModal(true)}
+          accessibilityLabel="Import Recipe"
+        >
+          <Ionicons name="download" size={28} color="#34C759" />
         </TouchableOpacity>
         <TouchableOpacity
           style={{ marginLeft: 8, backgroundColor: '#fff', borderRadius: 20, padding: 4, elevation: 2 }}
@@ -437,6 +556,16 @@ const MyRecipesWithAmplify: React.FC = () => {
         )}
         keyExtractor={(item) => item.id}
         style={styles.list}
+      />
+      
+      {/* Import Recipe Modal */}
+      <SimpleRecipeImport
+        visible={showImportModal}
+        onClose={() => setShowImportModal(false)}
+        onImportSuccess={() => {
+          setShowImportModal(false);
+          // The subscription will automatically update the recipes list
+        }}
       />
     </View>
   );

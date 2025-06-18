@@ -18,8 +18,9 @@ import { useAuth } from '../../lib/AuthContext';
 import { useShoppingList } from '../../hooks/useShoppingList';
 import MealPlanDatePicker from '../../components/MealPlanDatePicker';
 import { parseIngredient, categorizeIngredient } from '../../utils/shoppingListGenerator';
+import SimpleNutritionAnalysis from '../../components/recipe/SimpleNutritionAnalysis';
 
-type Recipe = Schema['Recipe']['type'];
+type Recipe = Schema['Recipe'];
 
 export default function RecipeDetails() {
   const { id } = useLocalSearchParams();
@@ -32,6 +33,8 @@ export default function RecipeDetails() {
   const [error, setError] = useState<string | null>(null);
   const [showMealPlanPicker, setShowMealPlanPicker] = useState(false);
   const [addingToShoppingList, setAddingToShoppingList] = useState(false);
+  const [showNutritionAnalysis, setShowNutritionAnalysis] = useState(false);
+  const [showImportExport, setShowImportExport] = useState(false);
   const { addShoppingListItem } = useShoppingList();
 
   useEffect(() => {
@@ -58,11 +61,24 @@ export default function RecipeDetails() {
       }
 
       try {
-        const result = await amplifyClient.models.Recipe.get({ id: id as string });
+        // Check if Amplify models are available
+        if (!amplifyClient?.models || !(amplifyClient.models as any).Recipe) {
+          console.log('⚠️ Amplify Recipe model not available');
+          setError('Recipe backend not configured');
+          setLoading(false);
+          return;
+        }
+        
+        const result = await (amplifyClient.models as any).Recipe.get({ id: id as string });
         if (mounted && result.data) {
           setRecipe(result.data);
           console.log('Recipe details record:', result.data);
           console.log('Recipe imageUrl used in details:', result.data.imageUrl);
+          
+          // Track recently viewed recipe
+          if ((global as any).addToRecentlyViewed) {
+            (global as any).addToRecentlyViewed(result.data);
+          }
         } else if (mounted) {
           setError('Recipe not found');
         }
@@ -118,8 +134,34 @@ export default function RecipeDetails() {
     );
   }
 
-  const ingredients = recipe.ingredients ? JSON.parse(recipe.ingredients) : [];
-  const instructions = recipe.instructions ? JSON.parse(recipe.instructions) : [];
+  // Parse ingredients and instructions - they might be JSON strings or arrays
+  let ingredients: string[] = [];
+  let instructions: string[] = [];
+
+  try {
+    if (Array.isArray(recipe.ingredients)) {
+      ingredients = recipe.ingredients;
+    } else if (typeof recipe.ingredients === 'string') {
+      ingredients = JSON.parse(recipe.ingredients);
+    }
+  } catch (error) {
+    console.log('Error parsing ingredients:', error);
+    ingredients = typeof recipe.ingredients === 'string' ? [recipe.ingredients] : [];
+  }
+
+  try {
+    if (Array.isArray(recipe.instructions)) {
+      instructions = recipe.instructions;
+    } else if (typeof recipe.instructions === 'string') {
+      instructions = JSON.parse(recipe.instructions);
+    }
+  } catch (error) {
+    console.log('Error parsing instructions:', error);
+    instructions = typeof recipe.instructions === 'string' ? [recipe.instructions] : [];
+  }
+
+  console.log('Parsed ingredients:', ingredients);
+  console.log('Parsed instructions:', instructions);
 
   const handleAddToShoppingList = async () => {
     if (!recipe || !session?.user?.id) return;
@@ -203,31 +245,31 @@ export default function RecipeDetails() {
         </View>
 
         {/* Nutrition Info */}
-        {(recipe.calories || recipe.protein || recipe.carbs || recipe.fat) && (
+        {(recipe.nutrition?.calories || recipe.nutrition?.protein || recipe.nutrition?.carbs || recipe.nutrition?.fat) && (
           <View style={styles.nutritionSection}>
             <Text style={styles.sectionTitle}>Nutrition Information</Text>
             <View style={styles.nutritionGrid}>
-              {recipe.calories && (
+              {recipe.nutrition?.calories && (
                 <View style={styles.nutritionItem}>
-                  <Text style={styles.nutritionValue}>{Math.round(recipe.calories)}</Text>
+                  <Text style={styles.nutritionValue}>{Math.round(recipe.nutrition.calories)}</Text>
                   <Text style={styles.nutritionLabel}>Calories</Text>
                 </View>
               )}
-              {recipe.protein && (
+              {recipe.nutrition?.protein && (
                 <View style={styles.nutritionItem}>
-                  <Text style={styles.nutritionValue}>{Math.round(recipe.protein)}g</Text>
+                  <Text style={styles.nutritionValue}>{Math.round(recipe.nutrition.protein)}g</Text>
                   <Text style={styles.nutritionLabel}>Protein</Text>
                 </View>
               )}
-              {recipe.carbs && (
+              {recipe.nutrition?.carbs && (
                 <View style={styles.nutritionItem}>
-                  <Text style={styles.nutritionValue}>{Math.round(recipe.carbs)}g</Text>
+                  <Text style={styles.nutritionValue}>{Math.round(recipe.nutrition.carbs)}g</Text>
                   <Text style={styles.nutritionLabel}>Carbs</Text>
                 </View>
               )}
-              {recipe.fat && (
+              {recipe.nutrition?.fat && (
                 <View style={styles.nutritionItem}>
-                  <Text style={styles.nutritionValue}>{Math.round(recipe.fat)}g</Text>
+                  <Text style={styles.nutritionValue}>{Math.round(recipe.nutrition.fat)}g</Text>
                   <Text style={styles.nutritionLabel}>Fat</Text>
                 </View>
               )}
@@ -249,7 +291,7 @@ export default function RecipeDetails() {
               )}
               {recipe.cookTime && (
                 <View style={styles.metaItem}>
-                  <Ionicons name="flame-outline" size={16} color="#666" />
+                  <Ionicons name="flash" size={16} color="#666" />
                   <Text style={styles.metaText}>{recipe.cookTime}min cook</Text>
                 </View>
               )}
@@ -260,6 +302,15 @@ export default function RecipeDetails() {
                 </View>
               )}
             </View>
+            
+            {/* Nutrition Analysis Button */}
+            <TouchableOpacity
+              style={styles.nutritionAnalysisButton}
+              onPress={() => setShowNutritionAnalysis(true)}
+            >
+              <Ionicons name="analytics" size={16} color="#007AFF" />
+              <Text style={styles.nutritionAnalysisText}>Nutrition Analysis</Text>
+            </TouchableOpacity>
           </View>
         )}
 
@@ -328,6 +379,23 @@ export default function RecipeDetails() {
           visible={showMealPlanPicker}
           onClose={() => setShowMealPlanPicker(false)}
           recipe={recipe}
+        />
+      )}
+
+      {/* Simple Nutrition Analysis Modal */}
+      {recipe && (
+        <SimpleNutritionAnalysis
+          visible={showNutritionAnalysis}
+          onClose={() => setShowNutritionAnalysis(false)}
+          ingredients={ingredients}
+          servings={recipe.servings || 4}
+          recipeName={recipe.name || 'Recipe'}
+          currentNutrition={{
+            calories: recipe.nutrition?.calories || undefined,
+            protein: recipe.nutrition?.protein || undefined,
+            carbs: recipe.nutrition?.carbs || undefined,
+            fat: recipe.nutrition?.fat || undefined,
+          }}
         />
       )}
     </SafeAreaView>
@@ -528,5 +596,22 @@ const styles = StyleSheet.create({
   },
   difficulty: {
     textTransform: 'capitalize',
+  },
+  nutritionAnalysisButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f0f8ff',
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 16,
+    borderWidth: 1,
+    borderColor: '#007AFF',
+  },
+  nutritionAnalysisText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#007AFF',
+    marginLeft: 6,
   },
 });

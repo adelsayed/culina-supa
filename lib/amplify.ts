@@ -3,7 +3,6 @@ import { generateClient } from 'aws-amplify/data';
 import { fetchAuthSession } from 'aws-amplify/auth';
 import type { Schema } from '../amplify/data/resource';
 import outputs from '../amplify_outputs.json';
-// import './subscriptionDebug'; // Import debug monitoring - temporarily disabled
 
 // Configure Amplify once
 try {

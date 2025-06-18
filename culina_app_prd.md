@@ -138,6 +138,59 @@ ShoppingListItem: a.model({
 - [ ] UI built to spec from Figma design
 
 ---
-
 Let me know if you'd like this exported to Notion, Markdown `.md` file, or pre-filled GitHub issues for planning.
+
+---
+
+## 📝 Recent Updates
+
+### 2025-06-16 - Enhanced AI Recipe Generation System
+#### Major UI/UX Improvements
+- **Relocated prompt editing**: Moved AI prompt customization from recipe detail modal to main screen header for immediate access
+- **New prompt editor modal**: Full-screen editing experience with:
+  - Large text area (400px height) for comfortable editing
+  - "Save & Generate" button for immediate recommendation refresh
+  - "Reset to Default" option to restore original prompt template
+  - Smart cancel functionality that preserves current active prompt
+- **Streamlined workflow**: Users can now edit prompts and see results instantly without navigating through multiple screens
+
+#### Enhanced Error Handling & User Feedback
+- **Intelligent error parsing**: Comprehensive JSON validation with step-by-step error detection
+- **User-friendly error messages**: Context-aware feedback with emojis and actionable guidance:
+  - 🔑 API key validation issues (401 errors)
+  - ⏳ Rate limiting guidance (429 errors)
+  - 💰 Quota exceeded notifications (402 errors)
+  - 🔄 JSON format troubleshooting with specific suggestions
+  - 📝 Missing recipe field detection and recovery steps
+- **Enhanced debugging**: Detailed console logging with timestamps, raw responses, and error context for developer troubleshooting
+
+#### Technical Improvements
+- **Updated AI models**: Migrated from legacy model names to current Gemini versions:
+  - `gemini_2_0_flash` (default, fastest)
+  - `gemini_1_5_pro` (advanced reasoning)
+  - `gemini_1_5_flash` (balanced performance)
+- **Improved recipe format**: Added `imageUrl` field to JSON template for better visual presentation
+- **Reactive state management**: Added dependency tracking for automatic re-generation when prompts change
+- **Code optimization**: Removed redundant prompt management, consolidated state, cleaned unused styles
+- **Type safety**: Enhanced TypeScript interfaces and proper model type constraints
+
+#### Files Modified
+- `components/GeminiRecommendedRecipes.tsx` - Complete prompt editing system overhaul
+- `screens/ProfileScreen.tsx` - Updated AI model types and settings interface
+- `culina_app_prd.md` - Documentation updates
+
+#### Developer Notes
+- All prompt editing UI removed from recipe detail modals
+- New modal-based editing system with improved UX patterns
+- Enhanced error logging for production debugging
+- Backward compatible with existing user profiles and settings
+
+### 2025-06-17 - UI/UX & AI Suggestions Improvements
+#### Restored & Enhanced Features
+- **Restored refresh and prompt edit icons**: Brought back per-meal slot controls for AI meal suggestions, allowing users to regenerate suggestions and edit prompts directly from each slot.
+- **Meal planning card enhancements**: Added meal type icons, nutrition info, and recipe image thumbnails to each meal slot for improved clarity and engagement.
+- **AI suggestions reliability**: Fixed issues with AI suggestions not loading due to profile settings or missing toggles; improved error handling and defensive coding for AI recipe parsing.
+- **Profile settings integration**: Ensured Gemini API key and smart recommendations toggles are respected and persist after schema updates.
+- **'Coming Soon' card improvements**: Clarified the Smart Meal Planning progress card and outlined next steps for user engagement and waitlist functionality.
+
 
