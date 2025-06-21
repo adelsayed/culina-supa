@@ -119,6 +119,3 @@ export type Schema = {
   ShoppingListItem: ShoppingListItem;
   UserProfile: UserProfile;
 };
-
-// --- No default export or named 'data' export here ---
-// If you need to export a 'data' object, define it explicitly elsewhere.
