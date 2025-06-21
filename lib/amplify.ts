@@ -24,9 +24,13 @@ const createMockAmplifyClient = () => {
     prepTime: 15,
     cookTime: 30,
     difficulty: 'Medium',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+    createdAt: '2025-01-01T00:00:00.000Z',
+    updatedAt: '2025-01-01T00:00:00.000Z',
   }));
+
+  // In-memory storage for user profiles
+  const mockUserProfiles: any[] = [];
+  let profileCounter = 1;
 
   // Counter for new recipes to ensure unique IDs
   let recipeCounter = mockRecipes.length + 1;
@@ -34,8 +38,11 @@ const createMockAmplifyClient = () => {
   return {
     models: {
       Recipe: {
+        get: async (data: any) => {
+          const recipe = mockRecipes.find(r => r.id === data.id);
+          return { data: recipe || null };
+        },
         list: async (params?: any) => {
-          console.log('Mock Recipe.list called with:', params);
           // Filter by userId if provided
           let filteredRecipes = mockRecipes;
           if (params?.filter?.userId?.eq) {
@@ -44,7 +51,6 @@ const createMockAmplifyClient = () => {
           return { data: filteredRecipes };
         },
         create: async (data: any) => {
-          console.log('Mock Recipe.create called with:', data);
           const newRecipe = {
             id: `mock-recipe-${recipeCounter++}`,
             ...data,
@@ -55,7 +61,6 @@ const createMockAmplifyClient = () => {
           return { data: newRecipe };
         },
         update: async (data: any) => {
-          console.log('Mock Recipe.update called with:', data);
           const index = mockRecipes.findIndex(recipe => recipe.id === data.id);
           if (index !== -1) {
             mockRecipes[index] = { ...mockRecipes[index], ...data, updatedAt: new Date().toISOString() };
@@ -64,7 +69,6 @@ const createMockAmplifyClient = () => {
           return { data: null };
         },
         delete: async (data: any) => {
-          console.log('Mock Recipe.delete called with:', data);
           const index = mockRecipes.findIndex(recipe => recipe.id === data.id);
           if (index !== -1) {
             const deletedRecipe = mockRecipes.splice(index, 1)[0];
@@ -74,14 +78,15 @@ const createMockAmplifyClient = () => {
         },
         observeQuery: (params?: any) => ({
           subscribe: (observer: any) => {
-            console.log('Mock Recipe.observeQuery called with:', params);
             // Filter by userId if provided
             let filteredRecipes = mockRecipes;
             if (params?.filter?.userId?.eq) {
               filteredRecipes = mockRecipes.filter(recipe => recipe.userId === params.filter.userId.eq);
             }
-            // Immediately return the data
-            observer.next({ items: filteredRecipes });
+            // Return data immediately without causing re-renders
+            setTimeout(() => {
+              observer.next({ items: filteredRecipes });
+            }, 0);
             return { unsubscribe: () => {} };
           }
         })
@@ -93,7 +98,9 @@ const createMockAmplifyClient = () => {
         delete: async (data: any) => ({ data }),
         observeQuery: () => ({
           subscribe: (observer: any) => {
-            observer.next({ items: [] });
+            setTimeout(() => {
+              observer.next({ items: [] });
+            }, 0);
             return { unsubscribe: () => {} };
           }
         })
@@ -105,7 +112,9 @@ const createMockAmplifyClient = () => {
         delete: async (data: any) => ({ data }),
         observeQuery: () => ({
           subscribe: (observer: any) => {
-            observer.next({ items: [] });
+            setTimeout(() => {
+              observer.next({ items: [] });
+            }, 0);
             return { unsubscribe: () => {} };
           }
         })
@@ -117,19 +126,59 @@ const createMockAmplifyClient = () => {
         delete: async (data: any) => ({ data }),
         observeQuery: () => ({
           subscribe: (observer: any) => {
-            observer.next({ items: [] });
+            setTimeout(() => {
+              observer.next({ items: [] });
+            }, 0);
             return { unsubscribe: () => {} };
           }
         })
       },
       UserProfile: {
-        list: async () => ({ data: [] }),
-        create: async (data: any) => ({ data }),
-        update: async (data: any) => ({ data }),
-        delete: async (data: any) => ({ data }),
-        observeQuery: () => ({
+        list: async (params?: any) => {
+          // Filter by userId if provided
+          let filteredProfiles = mockUserProfiles;
+          if (params?.filter?.userId?.eq) {
+            filteredProfiles = mockUserProfiles.filter(profile => profile.userId === params.filter.userId.eq);
+          }
+          return { data: filteredProfiles };
+        },
+        create: async (data: any) => {
+          const newProfile = {
+            id: `mock-profile-${profileCounter++}`,
+            ...data,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          };
+          mockUserProfiles.push(newProfile);
+          return { data: newProfile };
+        },
+        update: async (data: any) => {
+          const index = mockUserProfiles.findIndex(profile => profile.id === data.id);
+          if (index !== -1) {
+            mockUserProfiles[index] = { ...mockUserProfiles[index], ...data, updatedAt: new Date().toISOString() };
+            return { data: mockUserProfiles[index] };
+          }
+          return { data: null };
+        },
+        delete: async (data: any) => {
+          const index = mockUserProfiles.findIndex(profile => profile.id === data.id);
+          if (index !== -1) {
+            const deletedProfile = mockUserProfiles.splice(index, 1)[0];
+            return { data: deletedProfile };
+          }
+          return { data: null };
+        },
+        observeQuery: (params?: any) => ({
           subscribe: (observer: any) => {
-            observer.next({ items: [] });
+            // Filter by userId if provided
+            let filteredProfiles = mockUserProfiles;
+            if (params?.filter?.userId?.eq) {
+              filteredProfiles = mockUserProfiles.filter(profile => profile.userId === params.filter.userId.eq);
+            }
+            // Return data immediately without causing re-renders
+            setTimeout(() => {
+              observer.next({ items: filteredProfiles });
+            }, 0);
             return { unsubscribe: () => {} };
           }
         })

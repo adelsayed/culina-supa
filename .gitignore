@@ -42,3 +42,10 @@ yarn-error.*
 .amplify
 amplify_outputs*
 amplifyconfiguration*
+
+# Web
+*.html
+*.css
+
+# Zip files
+*.zip

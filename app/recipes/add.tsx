@@ -248,7 +248,7 @@ export default function AddRecipeScreen() {
             <ModalSelector
               data={unitOptions.map(option => ({
                 key: option,
-                label: option ? option : 'Unit',
+                label: <Text>{option ? option : 'Unit'}</Text>,
                 value: option
               }))}
               initValue="Unit"
@@ -301,7 +301,7 @@ export default function AddRecipeScreen() {
         <ModalSelector
           data={categoryOptions.map(option => ({
             key: option,
-            label: option ? option : 'Select Category',
+            label: <Text>{option ? option : 'Select Category'}</Text>,
             value: option
           }))}
           initValue="Select Category"

@@ -1,10 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { amplifyClient } from '../lib/amplify';
 import type { Schema } from '../amplify/data/resource';
 import { useAuth } from '../lib/AuthContext';
 import { getWeekStartDate } from '../utils/dateUtils';
 
-type ShoppingListItem = Schema['ShoppingListItem']['type'];
+type ShoppingListItem = Schema['ShoppingListItem'];
 
 export interface GroupedShoppingList {
   [category: string]: ShoppingListItem[];
@@ -17,7 +17,10 @@ export const useShoppingList = (weekStartDate?: Date) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const currentWeekStart = weekStartDate || getWeekStartDate(new Date());
+  // Memoize the week start date to prevent infinite loops
+  const currentWeekStart = useMemo(() => {
+    return weekStartDate || getWeekStartDate(new Date());
+  }, [weekStartDate]);
 
   // Load shopping list items for the current week
   const loadShoppingList = useCallback(async () => {

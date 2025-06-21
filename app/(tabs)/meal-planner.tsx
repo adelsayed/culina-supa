@@ -28,7 +28,7 @@ import AIMealSuggestions from '../../components/AIMealSuggestions';
 import AIWeeklyPlanner from '../../components/mealplanner/AIWeeklyPlanner';
 import NutritionBalancer from '../../components/mealplanner/NutritionBalancer';
 
-type Recipe = Schema['Recipe']['type'];
+type Recipe = Schema['Recipe'];
 type MealType = 'breakfast' | 'snack1' | 'lunch' | 'snack2' | 'dinner';
 
 const MealPlannerScreen: React.FC = () => {
@@ -333,6 +333,7 @@ const MealPlannerScreen: React.FC = () => {
                   {/* AI Suggestion Card for Empty Slot */}
                   {mealEntries.length === 0 && (
                     <AIMealSuggestions
+                      key={`ai-${meal.type}`}
                       selectedDate={selectedDate}
                       mealType={meal.type}
                       onSelectRecipe={handleSelectRecipe}

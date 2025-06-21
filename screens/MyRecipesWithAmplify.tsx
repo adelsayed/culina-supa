@@ -345,27 +345,6 @@ const MyRecipesWithAmplify: React.FC = () => {
         <Text style={[styles.loadingText, { marginTop: 16 }]}>
           No recipes found. Your recipes will appear here.
         </Text>
-        
-        {/* Test Connection Button */}
-        <TouchableOpacity
-          style={{
-            marginTop: 20,
-            backgroundColor: '#007AFF',
-            borderRadius: 12,
-            paddingVertical: 12,
-            paddingHorizontal: 24,
-            flexDirection: 'row',
-            alignItems: 'center',
-            elevation: 3,
-          }}
-          onPress={handleTestConnection}
-        >
-          <Ionicons name="cloud-outline" size={24} color="#fff" />
-          <Text style={{ color: '#fff', fontWeight: 'bold', marginLeft: 8 }}>
-            Test Amplify Connection
-          </Text>
-        </TouchableOpacity>
-        
       </View>
     );
   }

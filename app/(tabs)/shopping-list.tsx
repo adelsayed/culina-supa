@@ -20,7 +20,7 @@ import SmartShoppingList from '../../components/shoppinglist/SmartShoppingList';
 import AutoShoppingGenerator from '../../components/shoppinglist/AutoShoppingGenerator';
 import type { Schema } from '../../amplify/data/resource';
 
-type ShoppingListItem = Schema['ShoppingListItem']['type'];
+type ShoppingListItem = Schema['ShoppingListItem'];
 
 const ShoppingListScreen: React.FC = () => {
   const { session } = useAuth();
@@ -44,18 +44,6 @@ const ShoppingListScreen: React.FC = () => {
   const [generatingList, setGeneratingList] = useState(false);
   const [showSmartGenerator, setShowSmartGenerator] = useState(false);
   const [useSmartView, setUseSmartView] = useState(true);
-
-  // Refresh shopping list when screen becomes focused
-  useEffect(() => {
-    const unsubscribe = () => {
-      refreshShoppingList();
-    };
-    
-    // Call refresh immediately
-    unsubscribe();
-    
-    return unsubscribe;
-  }, [refreshShoppingList]);
 
   const addCustomItem = async () => {
     if (!newItemName.trim()) return;
@@ -198,179 +186,149 @@ const ShoppingListScreen: React.FC = () => {
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.headerButton}
-            onPress={() => setShowAddItem(!showAddItem)}
+            onPress={handleClearOptions}
           >
-            <Ionicons name="add" size={24} color="#007AFF" />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.headerButton} onPress={handleClearOptions}>
-            <Ionicons name="trash-outline" size={24} color="#FF3B30" />
+            <Ionicons name="trash-outline" size={24} color="#EF4444" />
           </TouchableOpacity>
         </View>
       </View>
 
-      {/* Progress Bar */}
-      <View style={styles.progressContainer}>
-        <View style={styles.progressInfo}>
-          <Text style={styles.progressText}>
-            {progress.completed} of {progress.total} items completed
-          </Text>
-          <Text style={styles.progressPercentage}>
-            {Math.round(progress.percentage)}%
-          </Text>
+      {/* Content */}
+      {loading ? (
+        <View style={styles.centerContent}>
+          <ActivityIndicator size="large" color="#007AFF" />
+          <Text style={styles.loadingText}>Loading shopping list...</Text>
         </View>
-        <View style={styles.progressBar}>
-          <View 
-            style={[
-              styles.progressFill, 
-              { width: `${progress.percentage}%` }
-            ]} 
-          />
-        </View>
-      </View>
-
-      {/* Add Item Input */}
-      {showAddItem && (
-        <View style={styles.addItemContainer}>
-          <TextInput
-            style={styles.addItemInput}
-            placeholder="Add new item..."
-            value={newItemName}
-            onChangeText={setNewItemName}
-            onSubmitEditing={addCustomItem}
-            autoFocus
-          />
-          <TouchableOpacity style={styles.addItemButton} onPress={addCustomItem}>
-            <Ionicons name="checkmark" size={20} color="#fff" />
+      ) : error ? (
+        <View style={styles.centerContent}>
+          <Ionicons name="alert-circle-outline" size={64} color="#EF4444" />
+          <Text style={styles.errorText}>Error loading shopping list</Text>
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={refreshShoppingList}
+          >
+            <Text style={styles.retryButtonText}>Retry</Text>
           </TouchableOpacity>
         </View>
-      )}
-
-      {/* Main Content - Smart or Basic View */}
-      {useSmartView ? (
-        <SmartShoppingList weekStartDate={getWeekStartDate(new Date())} />
       ) : (
-        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-          {Object.entries(shoppingList).map(([category, items]) => {
-            if (items.length === 0) return null;
-            
-            return (
-              <View key={category} style={styles.categorySection}>
-                <Text style={styles.categoryTitle}>{category}</Text>
-                {items.map((item: any) => (
-                  <View key={item.id} style={[
-                    styles.shoppingItem,
-                    item.isCompleted && styles.completedItem,
-                  ]}>
-                    <TouchableOpacity
-                      style={styles.itemContent}
-                      onPress={() => toggleItemCompleted(item.id)}
-                    >
-                      <View style={styles.itemLeft}>
-                        <View style={[
-                          styles.checkbox,
-                          item.isCompleted && styles.checkedBox,
-                        ]}>
-                          {item.isCompleted && (
-                            <Ionicons name="checkmark" size={16} color="#fff" />
-                          )}
-                        </View>
-                        <View style={styles.itemInfo}>
-                          <Text style={[
-                            styles.itemName,
-                            item.isCompleted && styles.completedText,
-                          ]}>
-                            {item.itemName}
-                          </Text>
-                          <Text style={[
-                            styles.itemQuantity,
-                            item.isCompleted && styles.completedText,
-                          ]}>
-                            {item.quantity} {item.unit}
-                          </Text>
-                        </View>
-                      </View>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.deleteButton}
-                      onPress={() => {
-                        Alert.alert(
-                          'Delete Item',
-                          `Remove "${item.itemName}" from your shopping list?`,
-                          [
-                            { text: 'Cancel', style: 'cancel' },
-                            {
-                              text: 'Delete',
-                              style: 'destructive',
-                              onPress: async () => {
-                                const success = await deleteShoppingListItem(item.id);
-                                if (!success) {
-                                  Alert.alert('Error', 'Failed to delete item');
-                                }
-                              },
-                            },
-                          ]
-                        );
-                      }}
-                    >
-                      <Ionicons name="close" size={20} color="#FF3B30" />
-                    </TouchableOpacity>
-                  </View>
-                ))}
-              </View>
-            );
-          })}
-
-          {/* Empty State */}
-          {Object.values(shoppingList).every((items) => items.length === 0) && (
-            <View style={styles.emptyState}>
-              <Ionicons name="basket-outline" size={64} color="#ccc" />
-              <Text style={styles.emptyStateTitle}>Your shopping list is empty</Text>
-              <Text style={styles.emptyStateText}>
-                Add items manually or generate a list from your meal plan
-              </Text>
-              <TouchableOpacity
-                style={styles.generateButton}
-                onPress={() => setShowAddItem(true)}
-              >
-                <Text style={styles.generateButtonText}>Add First Item</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-
-          {/* Action Buttons */}
-          <View style={styles.actionButtons}>
+        <>
+          {/* Quick Actions */}
+          <View style={styles.quickActions}>
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() => setShowAddItem(true)}
+            >
+              <Ionicons name="add" size={20} color="#007AFF" />
+              <Text style={styles.actionButtonText}>Add Item</Text>
+            </TouchableOpacity>
             <TouchableOpacity
               style={styles.actionButton}
               onPress={generateFromMealPlan}
               disabled={generatingList}
             >
-              {generatingList ? (
-                <ActivityIndicator size="small" color="#007AFF" />
-              ) : (
-                <Ionicons name="refresh-outline" size={20} color="#007AFF" />
-              )}
+              <Ionicons name="restaurant" size={20} color="#10B981" />
               <Text style={styles.actionButtonText}>
-                {generatingList ? 'Generating...' : 'Generate from Meal Plan'}
+                {generatingList ? 'Generating...' : 'From Meal Plan'}
               </Text>
             </TouchableOpacity>
-            
-            <TouchableOpacity style={styles.actionButton}>
-              <Ionicons name="share-outline" size={20} color="#007AFF" />
-              <Text style={styles.actionButtonText}>Share List</Text>
-            </TouchableOpacity>
           </View>
-        </ScrollView>
+
+          {/* Shopping List Content */}
+          {useSmartView ? (
+            <SmartShoppingList weekStartDate={getWeekStartDate(new Date())} />
+          ) : (
+            <ScrollView style={styles.listContainer}>
+              {Object.entries(shoppingList).map(([category, items]) => (
+                <View key={category} style={styles.categorySection}>
+                  <Text style={styles.categoryTitle}>{category}</Text>
+                  {items.map((item) => (
+                    <TouchableOpacity
+                      key={item.id}
+                      style={[
+                        styles.listItem,
+                        item.isCompleted && styles.completedItem,
+                      ]}
+                      onPress={() => toggleItemCompleted(item.id)}
+                    >
+                      <View style={styles.itemContent}>
+                        <Ionicons
+                          name={item.isCompleted ? 'checkmark-circle' : 'ellipse-outline'}
+                          size={24}
+                          color={item.isCompleted ? '#10B981' : '#6B7280'}
+                        />
+                        <View style={styles.itemDetails}>
+                          <Text
+                            style={[
+                              styles.itemName,
+                              item.isCompleted && styles.completedText,
+                            ]}
+                          >
+                            {item.itemName}
+                          </Text>
+                          <Text style={styles.itemQuantity}>
+                            {item.quantity} {item.unit}
+                          </Text>
+                        </View>
+                      </View>
+                      <TouchableOpacity
+                        onPress={() => deleteShoppingListItem(item.id)}
+                        style={styles.deleteButton}
+                      >
+                        <Ionicons name="trash-outline" size={20} color="#EF4444" />
+                      </TouchableOpacity>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              ))}
+            </ScrollView>
+          )}
+        </>
       )}
 
-      {/* Auto Shopping Generator Modal */}
-      <AutoShoppingGenerator
-        visible={showSmartGenerator}
-        onClose={() => setShowSmartGenerator(false)}
-        onGenerated={() => {
-          // Refresh the shopping list after generation
-          refreshShoppingList();
-        }}
-      />
+      {/* Add Item Modal */}
+      {showAddItem && (
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Add Shopping Item</Text>
+            <TextInput
+              style={styles.modalInput}
+              placeholder="Item name"
+              value={newItemName}
+              onChangeText={setNewItemName}
+              autoFocus
+            />
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={() => {
+                  setShowAddItem(false);
+                  setNewItemName('');
+                }}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.addButton]}
+                onPress={addCustomItem}
+              >
+                <Text style={styles.addButtonText}>Add</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
+
+      {/* Smart Generator Modal */}
+      {showSmartGenerator && (
+        <AutoShoppingGenerator
+          visible={showSmartGenerator}
+          onClose={() => setShowSmartGenerator(false)}
+          onGenerated={() => {
+            // Refresh the shopping list after generation
+            refreshShoppingList();
+          }}
+        />
+      )}
     </SafeAreaView>
   );
 };
@@ -378,276 +336,218 @@ const ShoppingListScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
-  },
-  centerContent: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  emptyText: {
-    fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
-    marginTop: 16,
+    backgroundColor: '#F9FAFB',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  headerActions: {
-    flexDirection: 'row',
-  },
-  headerButton: {
-    marginLeft: 16,
-    padding: 4,
-  },
-  progressContainer: {
-    padding: 16,
-    backgroundColor: '#f8f9fa',
-  },
-  progressInfo: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  progressText: {
-    fontSize: 14,
-    color: '#666',
-  },
-  progressPercentage: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#007AFF',
-  },
-  progressBar: {
-    height: 6,
-    backgroundColor: '#e0e0e0',
-    borderRadius: 3,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: '#34C759',
-    borderRadius: 3,
-  },
-  addItemContainer: {
-    flexDirection: 'row',
-    padding: 16,
-    backgroundColor: '#f8f9fa',
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  addItemInput: {
-    flex: 1,
-    height: 40,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    backgroundColor: '#fff',
-    marginRight: 12,
-  },
-  addItemButton: {
-    width: 40,
-    height: 40,
-    backgroundColor: '#007AFF',
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  content: {
-    flex: 1,
-  },
-  categorySection: {
-    marginBottom: 24,
-  },
-  categoryTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-    paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  shoppingItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-  },
-  completedItem: {
-    backgroundColor: '#f8f9fa',
-  },
-  itemLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  checkbox: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#ddd',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  checkedBox: {
-    backgroundColor: '#34C759',
-    borderColor: '#34C759',
-  },
-  itemInfo: {
-    flex: 1,
-  },
-  itemName: {
-    fontSize: 16,
-    color: '#333',
-    fontWeight: '500',
-  },
-  itemQuantity: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 2,
-  },
-  completedText: {
-    textDecorationLine: 'line-through',
-    color: '#999',
-  },
-  emptyState: {
-    alignItems: 'center',
-    paddingVertical: 60,
-    paddingHorizontal: 20,
-  },
-  emptyStateTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  emptyStateText: {
-    fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
-    marginBottom: 24,
-  },
-  generateButton: {
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    backgroundColor: '#007AFF',
-    borderRadius: 8,
-  },
-  generateButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  actionButtons: {
-    padding: 16,
-  },
-  actionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    backgroundColor: '#f8f9fa',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-    marginBottom: 12,
-  },
-  actionButtonText: {
-    marginLeft: 8,
-    fontSize: 16,
-    color: '#007AFF',
-    fontWeight: '600',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 40,
-  },
-  loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: '#666',
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 40,
-  },
-  errorText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: '#FF3B30',
-    textAlign: 'center',
-  },
-  fallbackBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFF3CD',
-    padding: 12,
-    marginHorizontal: 16,
-    marginTop: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#FFEAA7',
-  },
-  fallbackText: {
-    marginLeft: 8,
-    fontSize: 14,
-    color: '#856404',
-    flex: 1,
-  },
-  itemContent: {
-    flex: 1,
-  },
-  deleteButton: {
-    padding: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
+    borderBottomColor: '#E5E7EB',
   },
   headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    flex: 1,
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#111827',
+    marginRight: 12,
   },
   viewToggle: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginLeft: 12,
+    backgroundColor: '#F3F4F6',
     paddingHorizontal: 8,
     paddingVertical: 4,
-    backgroundColor: '#f0f0f0',
     borderRadius: 12,
-    gap: 4,
   },
   viewToggleText: {
     fontSize: 12,
     fontWeight: '600',
     color: '#007AFF',
+    marginRight: 4,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  headerButton: {
+    padding: 8,
+    marginLeft: 8,
+  },
+  quickActions: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  actionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F3F4F6',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginRight: 12,
+  },
+  actionButtonText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#374151',
+    marginLeft: 4,
+  },
+  listContainer: {
+    flex: 1,
+  },
+  categorySection: {
+    marginBottom: 16,
+  },
+  categoryTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#374151',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: '#F9FAFB',
+  },
+  listItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  completedItem: {
+    backgroundColor: '#F0FDF4',
+  },
+  itemContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  itemDetails: {
+    marginLeft: 12,
+    flex: 1,
+  },
+  itemName: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#111827',
+  },
+  completedText: {
+    textDecorationLine: 'line-through',
+    color: '#6B7280',
+  },
+  itemQuantity: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginTop: 2,
+  },
+  deleteButton: {
+    padding: 8,
+  },
+  centerContent: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 32,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#6B7280',
+    textAlign: 'center',
+    marginTop: 16,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#6B7280',
+    marginTop: 12,
+  },
+  errorText: {
+    fontSize: 16,
+    color: '#EF4444',
+    textAlign: 'center',
+    marginTop: 16,
+  },
+  retryButton: {
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginTop: 16,
+  },
+  retryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  modalOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 24,
+    width: '80%',
+    maxWidth: 400,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 16,
+  },
+  modalInput: {
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 16,
+    marginBottom: 16,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+  },
+  modalButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginLeft: 8,
+  },
+  cancelButton: {
+    backgroundColor: '#F3F4F6',
+  },
+  cancelButtonText: {
+    color: '#374151',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  addButton: {
+    backgroundColor: '#007AFF',
+  },
+  addButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
   },
 });
 

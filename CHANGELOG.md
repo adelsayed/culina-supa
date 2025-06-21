@@ -1,5 +1,23 @@
 # Culina App Changelog
 
+## [2025-06-19] Critical Bug Squashing & Stability Improvements
+
+### 🐛 **Major Bug Fixes**
+- **Shopping List Infinite Loop**: Fixed a critical bug causing the shopping list to get stuck in an infinite loading loop.
+- **Recipe Details Loading**: Resolved an issue where the recipe details screen would fail to load recipe data.
+- **Profile Data Persistence**: Fixed a bug where user profile data was not being saved or retrieved correctly.
+- **Add Recipe Screen Crash**: Fixed a crash on the "Add Recipe" screen caused by improper text rendering.
+- **Meal Planner Rendering**: Resolved a React warning about missing `key` props when rendering AI-generated meal plans.
+- **API Key Pasting**: Fixed an issue that prevented users from pasting their Gemini API key in the profile settings.
+
+### 🔧 **Technical Improvements**
+- **Mock Backend Enhancements**: Significantly improved the mock Amplify client to properly handle data for `UserProfile` and `Recipe` models, including `get` and `list` operations with filtering.
+- **State Management**: Refactored the `useShoppingList` hook to use `useMemo` for the `weekStartDate`, preventing unnecessary re-renders.
+- **Component Stability**: Added missing `key` props to dynamically rendered lists in the meal planner, ensuring stable and predictable rendering.
+
+### 🧹 **UI Clean-up**
+- **Removed "Test Connection" Button**: Removed a now-redundant "Test Amplify Connection" button from the recipe list screen.
+
 ## [2025-06-18] Recipe Import Bug Fixes & AI Service Improvements
 
 ### 🐛 **Critical Bug Fixes**
@@ -178,7 +196,7 @@
 - **Recipe Categories**: Quick meals (15-30min), seasonal ingredients, cuisine-specific, health-optimized
 - **Validation System**: Ensures all generated recipes are complete and practical
 
-### � **Major Home Screen Enhancement - "Today's Dashboard"**
+### 🎯 **Major Home Screen Enhancement - "Today's Dashboard"**
 - **Complete Dashboard Redesign**: Transformed home screen from static welcome page to functional command center
 - **Today's Meal Plan**: Shows planned breakfast, lunch, dinner with quick add meal buttons
 - **Nutrition Progress**: Real-time tracking of calories, protein, and daily targets with visual progress indicators
