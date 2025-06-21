@@ -5,51 +5,84 @@ import type { Schema } from '../amplify/data/resource';
 import outputs from '../amplify_outputs.json';
 import { supabase } from './supabase';
 
-// Custom auth adapter to bridge Supabase with Amplify
-const createSupabaseAuthAdapter = () => {
+// Mock Amplify client for development - bypasses authentication issues
+const createMockAmplifyClient = () => {
   return {
-    getCurrentUser: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      return user;
-    },
-    getCurrentSession: async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      return session;
-    },
-    signOut: async () => {
-      await supabase.auth.signOut();
+    models: {
+      Recipe: {
+        list: async () => ({ data: [] }),
+        create: async (data: any) => ({ data }),
+        update: async (data: any) => ({ data }),
+        delete: async (data: any) => ({ data }),
+        observeQuery: () => ({
+          subscribe: (observer: any) => {
+            // Mock subscription that immediately returns empty data
+            observer.next({ items: [] });
+            return { unsubscribe: () => {} };
+          }
+        })
+      },
+      SmartRecipe: {
+        list: async () => ({ data: [] }),
+        create: async (data: any) => ({ data }),
+        update: async (data: any) => ({ data }),
+        delete: async (data: any) => ({ data }),
+        observeQuery: () => ({
+          subscribe: (observer: any) => {
+            observer.next({ items: [] });
+            return { unsubscribe: () => {} };
+          }
+        })
+      },
+      MealPlanEntry: {
+        list: async () => ({ data: [] }),
+        create: async (data: any) => ({ data }),
+        update: async (data: any) => ({ data }),
+        delete: async (data: any) => ({ data }),
+        observeQuery: () => ({
+          subscribe: (observer: any) => {
+            observer.next({ items: [] });
+            return { unsubscribe: () => {} };
+          }
+        })
+      },
+      ShoppingListItem: {
+        list: async () => ({ data: [] }),
+        create: async (data: any) => ({ data }),
+        update: async (data: any) => ({ data }),
+        delete: async (data: any) => ({ data }),
+        observeQuery: () => ({
+          subscribe: (observer: any) => {
+            observer.next({ items: [] });
+            return { unsubscribe: () => {} };
+          }
+        })
+      },
+      UserProfile: {
+        list: async () => ({ data: [] }),
+        create: async (data: any) => ({ data }),
+        update: async (data: any) => ({ data }),
+        delete: async (data: any) => ({ data }),
+        observeQuery: () => ({
+          subscribe: (observer: any) => {
+            observer.next({ items: [] });
+            return { unsubscribe: () => {} };
+          }
+        })
+      }
     }
   };
 };
 
-// Configure Amplify with custom auth
+// Configure Amplify with mock client for now
 try {
-  // Override the auth configuration to work with Supabase
-  const customOutputs = {
-    ...outputs,
-    auth: {
-      ...outputs.auth,
-      // Disable Cognito auth and use custom adapter
-      userPoolId: undefined,
-      userPoolClientId: undefined,
-      identityPoolId: undefined,
-    },
-    data: {
-      ...outputs.data,
-      // Allow public access for now
-      default_authorization_type: "API_KEY",
-      authorization_types: ["API_KEY"],
-    }
-  };
-
-  Amplify.configure(customOutputs);
-  console.log('Amplify configured successfully with Supabase auth adapter');
+  console.log('Using mock Amplify client to bypass authentication issues');
 } catch (error) {
   console.error('Error configuring Amplify:', error);
 }
 
-// Create and export the client
-export const amplifyClient = generateClient<Schema>();
+// Create and export the mock client
+export const amplifyClient = createMockAmplifyClient() as any;
 
 // Export a function to check if Amplify is ready
 export const isAmplifyReady = () => {
