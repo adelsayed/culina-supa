@@ -10,6 +10,8 @@ import SimpleRecipeImport from '../components/recipe/SimpleRecipeImport';
 import { testAmplifyConnection } from '../utils/amplifyDiagnostic';
 // import { subscriptionManager } from '../lib/subscriptionManager'; // temporarily disabled
 
+const defaultAIRecipeImage = require('../assets/images/ai-recipe-default.png');
+
 type Recipe = Schema['Recipe'];
 
 const RecipeItem: React.FC<{
@@ -20,6 +22,9 @@ const RecipeItem: React.FC<{
   onDelete?: (id: string) => void;
 }> = ({ recipe, isFavorite, onToggleFavorite, onEdit, onDelete }) => {
   const [imageError, setImageError] = useState(false);
+
+  const isAIRecipe = recipe.source === 'AI Generated';
+  const displayImageUri = isAIRecipe && !recipe.imageUrl ? null : recipe.imageUrl;
 
   // Safely parse ingredients with error handling
   let ingredients: string[] = [];
@@ -50,19 +55,25 @@ const RecipeItem: React.FC<{
       onPress={() => navigateToRecipe(recipe.id)}
       activeOpacity={0.85}
     >
-      {imageError ? (
-        <View style={[styles.recipeImage, styles.placeholderImage]}>
-          <Text style={styles.placeholderText}>No Image</Text>
-        </View>
+      {imageError || !displayImageUri ? (
+        <Image
+          source={defaultAIRecipeImage}
+          style={styles.recipeImage}
+        />
       ) : (
         <Image
-          source={{ uri: recipe.imageUrl || undefined }}
+          source={{ uri: displayImageUri }}
           style={styles.recipeImage}
           onError={() => setImageError(true)}
         />
       )}
       <View style={styles.recipeDetails}>
-        <Text style={styles.recipeName}>{recipe.name}</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+          {recipe.source === 'AI Generated' && (
+            <Ionicons name="sparkles" size={18} color="#007AFF" style={{ marginRight: 6 }} />
+          )}
+          <Text style={styles.recipeName}>{recipe.name}</Text>
+        </View>
         {category ? (
           <Text style={styles.recipeCategory}>{category}</Text>
         ) : null}

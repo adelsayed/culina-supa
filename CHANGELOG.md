@@ -1,5 +1,17 @@
 # Culina App Changelog
 
+## [2025-06-20] AI-Generated Recipes as Permanent App Content
+
+### 🚀 **Major Feature: Permanent AI Recipes**
+- **Save AI Meal Plans**: AI-generated meal plan suggestions can now be saved as permanent recipes in the user's collection.
+- **"AI Generated" Source**: New recipes created from AI suggestions are automatically marked with `source: "AI Generated"`.
+- **Dedicated AI Tag**: An "AI Generated" tag is automatically added to these recipes for easy filtering and identification.
+- **Visual Indicator**: A ✨ "sparkles" icon now appears next to AI-generated recipes in both recipe lists and on the recipe details screen.
+- **Default Recipe Image**: AI-generated recipes are now assigned a default placeholder image to ensure a consistent UI.
+
+### 🐛 **Bug Fixes & Improvements**
+- **AI Meal Plan Keys**: Resolved a recurring React warning about missing `key` props when accepting an AI-generated meal plan.
+
 ## [2025-06-19] Critical Bug Squashing & Stability Improvements
 
 ### 🐛 **Major Bug Fixes**

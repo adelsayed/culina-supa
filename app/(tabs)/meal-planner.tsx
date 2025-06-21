@@ -27,6 +27,7 @@ import type { Schema } from '../../amplify/data/resource';
 import AIMealSuggestions from '../../components/AIMealSuggestions';
 import AIWeeklyPlanner from '../../components/mealplanner/AIWeeklyPlanner';
 import NutritionBalancer from '../../components/mealplanner/NutritionBalancer';
+import { amplifyClient } from '../../lib/amplify';
 
 type Recipe = Schema['Recipe'];
 type MealType = 'breakfast' | 'snack1' | 'lunch' | 'snack2' | 'dinner';
@@ -38,6 +39,7 @@ const MealPlannerScreen: React.FC = () => {
   const [showRecipePicker, setShowRecipePicker] = useState(false);
   const [selectedMealType, setSelectedMealType] = useState<MealType>('breakfast');
   const [showAIWeeklyPlanner, setShowAIWeeklyPlanner] = useState(false);
+  const [isApplyingPlan, setIsApplyingPlan] = useState(false);
 
   const {
     weekMealPlan,
@@ -105,6 +107,13 @@ const MealPlannerScreen: React.FC = () => {
   };
 
   const handleAIWeeklyPlan = async (weekPlan: any[], clearExisting: boolean = false) => {
+    if (!session?.user?.id) {
+      Alert.alert('Error', 'You must be signed in to apply a meal plan.');
+      return;
+    }
+
+    setIsApplyingPlan(true);
+
     try {
       let successCount = 0;
       let totalMeals = 0;
@@ -125,42 +134,43 @@ const MealPlannerScreen: React.FC = () => {
       for (const dayPlan of weekPlan) {
         const dayDate = dayPlan.date;
         
-        // Add each meal type for this day
         const mealTypes = [
           { type: 'breakfast' as MealType, name: dayPlan.meals.breakfast },
           { type: 'lunch' as MealType, name: dayPlan.meals.lunch },
           { type: 'dinner' as MealType, name: dayPlan.meals.dinner },
-        ];
+        ].filter(m => m.name && m.name.trim() !== '');
 
         for (const meal of mealTypes) {
           totalMeals++;
           
-          // Create a virtual recipe entry for the AI-generated meal
-          const virtualRecipe = {
-            id: `ai-${Date.now()}-${Math.random()}`,
+          // 1. Create a new recipe object and save it to the database
+          const newRecipeData = {
             name: meal.name,
-            userId: session?.user?.id || '',
-            ingredients: '[]', // Empty for now
-            instructions: '[]', // Empty for now
+            userId: session.user.id,
+            ingredients: '[]',
+            instructions: '[]',
             servings: 1,
-            calories: Math.round(dayPlan.totalCalories / 3), // Rough estimate per meal
+            calories: Math.round(dayPlan.totalCalories / 3),
             protein: Math.round(dayPlan.totalProtein / 3),
             carbs: Math.round(dayPlan.totalCarbs / 3),
             fat: Math.round(dayPlan.totalFat / 3),
-            prepTime: 30,
-            cookTime: 30,
+            prepTime: 20, // Default value
+            cookTime: 20, // Default value
             difficulty: 'medium' as const,
             category: 'AI Generated',
-            imageUrl: null,
-            tags: [],
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
+            source: 'AI Generated', // Mark as AI-generated
+            tags: ['ai-generated'], // Add a tag for filtering
           };
 
-          // Add the meal to the planner
-          const success = await addMealPlanEntry(dayDate, meal.type, virtualRecipe, 1);
-          if (success) {
-            successCount++;
+          const createResult = await (amplifyClient.models as any).Recipe.create(newRecipeData);
+          
+          if (createResult.data) {
+            const savedRecipe = createResult.data;
+            // 2. Add the newly created recipe to the meal plan
+            const success = await addMealPlanEntry(dayDate, meal.type, savedRecipe, 1);
+            if (success) {
+              successCount++;
+            }
           }
         }
       }
@@ -171,22 +181,22 @@ const MealPlannerScreen: React.FC = () => {
       }
 
       // Show success/failure message
-      if (successCount === totalMeals) {
+      if (successCount === totalMeals && totalMeals > 0) {
         Alert.alert(
           '🎉 Weekly Plan Applied!',
-          `Successfully added ${successCount} AI-generated meals to your weekly plan.`,
+          `Successfully saved and planned ${successCount} new AI-generated meals.`,
           [{ text: 'Great!' }]
         );
       } else if (successCount > 0) {
         Alert.alert(
           '⚠️ Partial Success',
-          `Added ${successCount} of ${totalMeals} meals. Some meals may have failed to add.`,
+          `Planned ${successCount} of ${totalMeals} meals. Some meals may have failed to save.`,
           [{ text: 'OK' }]
         );
       } else {
         Alert.alert(
           '❌ Plan Application Failed',
-          'Failed to add meals to your plan. Please try again.',
+          'Failed to save new recipes to your collection. Please try again.',
           [{ text: 'Retry' }]
         );
       }
@@ -194,9 +204,11 @@ const MealPlannerScreen: React.FC = () => {
       console.error('Error applying AI weekly plan:', error);
       Alert.alert(
         'Error',
-        'Failed to apply the weekly plan. Please try again.',
+        'A problem occurred while applying the weekly plan. Please try again.',
         [{ text: 'OK' }]
       );
+    } finally {
+      setIsApplyingPlan(false);
     }
   };
 
@@ -295,15 +307,17 @@ const MealPlannerScreen: React.FC = () => {
         </View>
 
         {/* Loading State */}
-        {loading && (
+        {loading || isApplyingPlan ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color="#007AFF" />
-            <Text style={styles.loadingText}>Loading meal plan...</Text>
+            <Text style={styles.loadingText}>
+              {isApplyingPlan ? 'Applying your new meal plan...' : 'Loading meal plan...'}
+            </Text>
           </View>
-        )}
+        ) : null}
 
         {/* Error State */}
-        {error && (
+        {error && !loading && (
           <View style={styles.errorContainer}>
             <Ionicons name="alert-circle-outline" size={48} color="#FF3B30" />
             <Text style={styles.errorText}>{error}</Text>
@@ -311,7 +325,7 @@ const MealPlannerScreen: React.FC = () => {
         )}
 
         {/* Meal Slots */}
-        {!loading && !error && (
+        {!loading && !error && !isApplyingPlan && (
           <View style={styles.mealSlotsContainer}>
             {[
               { type: 'breakfast' as MealType, name: 'Breakfast', time: '8:00 AM', color: '#FFE4B5' },

@@ -20,6 +20,8 @@ import MealPlanDatePicker from '../../components/MealPlanDatePicker';
 import { parseIngredient, categorizeIngredient } from '../../utils/shoppingListGenerator';
 import SimpleNutritionAnalysis from '../../components/recipe/SimpleNutritionAnalysis';
 
+const defaultAIRecipeImage = require('../../assets/images/ai-recipe-default.png');
+
 type Recipe = Schema['Recipe'];
 
 export default function RecipeDetails() {
@@ -36,6 +38,9 @@ export default function RecipeDetails() {
   const [showNutritionAnalysis, setShowNutritionAnalysis] = useState(false);
   const [showImportExport, setShowImportExport] = useState(false);
   const { addShoppingListItem } = useShoppingList();
+
+  const isAIRecipe = recipe?.source === 'AI Generated';
+  const displayImageUri = isAIRecipe && !recipe?.imageUrl ? null : recipe?.imageUrl;
 
   useEffect(() => {
     let mounted = true;
@@ -216,19 +221,25 @@ export default function RecipeDetails() {
           >
             <Ionicons name="arrow-back" size={24} color="#fff" />
           </TouchableOpacity>
-          {imageError ? (
-            <View style={[styles.coverImage, styles.placeholderImage]}>
-              <Ionicons name="image-outline" size={48} color="#666" />
-            </View>
+          {imageError || !displayImageUri ? (
+            <Image 
+              source={defaultAIRecipeImage}
+              style={styles.coverImage}
+            />
           ) : (
             <Image
-              source={{ uri: recipe.imageUrl || undefined }}
+              source={{ uri: displayImageUri }}
               style={styles.coverImage}
               onError={() => setImageError(true)}
             />
           )}
           <View style={styles.titleContainer}>
-            <Text style={styles.title}>{recipe.name}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: 16 }}>
+              {recipe.source === 'AI Generated' && (
+                <Ionicons name="sparkles" size={22} color="#007AFF" style={{ marginRight: 8 }} />
+              )}
+              <Text style={styles.title}>{recipe.name}</Text>
+            </View>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <TouchableOpacity
                 style={[styles.favoriteButton, { marginRight: 8 }]}
