@@ -1,11 +1,10 @@
-// --- Models for Recipe, SmartRecipe, MealPlanEntry ---
-
+// Type definitions for TypeScript - simplified approach to fix auth issues
 export type Recipe = {
   id: string;
   userId: string;
   name: string;
   description?: string;
-  ingredients: string[]; // or object[] if you want structured ingredients
+  ingredients: string[];
   instructions: string[];
   nutrition?: {
     calories: number;
@@ -63,11 +62,62 @@ export type MealPlanEntry = {
   plannedCalories?: number;
 };
 
-// --- Unified Schema type for compatibility with amplifyClient ---
+export type ShoppingListItem = {
+  id: string;
+  userId: string;
+  weekStartDate: string;
+  itemName: string;
+  quantity?: string;
+  unit?: string;
+  category?: string;
+  isCompleted: boolean;
+  recipeId?: string;
+  mealPlanEntryId?: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type UserProfile = {
+  id: string;
+  userId: string;
+  name?: string;
+  username?: string;
+  email?: string;
+  bio?: string;
+  profileImageUrl?: string;
+  age?: number;
+  weight?: number;
+  height?: number;
+  gender?: 'male' | 'female' | 'other';
+  activityLevel?: 'sedentary' | 'lightly_active' | 'moderately_active' | 'very_active' | 'extremely_active';
+  weightGoal?: 'maintain' | 'lose' | 'gain';
+  targetWeight?: number;
+  dailyCalorieTarget?: number;
+  proteinTarget?: number;
+  carbTarget?: number;
+  fatTarget?: number;
+  dietaryRestrictions?: string[];
+  allergies?: string[];
+  dislikedIngredients?: string[];
+  preferredCuisines?: string[];
+  geminiApiKey?: string;
+  customRecipePrompt?: string;
+  customMealSuggestionsPrompt?: string;
+  smartFeaturesEnabled: boolean;
+  units: 'metric' | 'imperial';
+  theme: 'light' | 'dark' | 'auto';
+  notificationsEnabled: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+// Unified Schema type for compatibility with amplifyClient
 export type Schema = {
   Recipe: Recipe;
   SmartRecipe: SmartRecipe;
   MealPlanEntry: MealPlanEntry;
+  ShoppingListItem: ShoppingListItem;
+  UserProfile: UserProfile;
 };
 
 // --- No default export or named 'data' export here ---
