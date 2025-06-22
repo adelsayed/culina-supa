@@ -13,7 +13,9 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "auth.adel.com.supabase",
-      "associatedDomains": ["applinks:fygrhhsgmymkriudjtul.supabase.co"],
+      "associatedDomains": [
+        "applinks:fygrhhsgmymkriudjtul.supabase.co"
+      ],
       "buildNumber": "1"
     },
     "android": {
@@ -34,7 +36,10 @@
               "pathPrefix": "/auth/v1/callback"
             }
           ],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
       ]
     },
@@ -45,6 +50,12 @@
     "experiments": {
       "typedRoutes": true,
       "tsconfigPaths": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "543387c1-0dd1-4136-85bf-b36d34774f63"
+      }
     }
   }
 }

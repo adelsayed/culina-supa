@@ -1,5 +1,15 @@
 # Culina App Changelog
 
+## [2025-06-22] Infrastructure & Tooling Updates
+
+### 🔧 **Build & Configuration**
+- **Added EAS Build Configuration**: Introduced `eas.json` to configure builds and updates with Expo Application Services.
+- **iOS URL Scheme for Supabase**: Updated `Info.plist` to include the necessary URL schemes for Supabase OAuth redirects on iOS.
+- **Hardcoded API Key Auth**: The Amplify client in `lib/amplify.ts` is now explicitly configured to use `apiKey` authentication mode, aligning with the backend setup.
+
+### 🌱 **Developer Tooling**
+- **Added Database Seeding Scripts**: Included new scripts in the `scripts/` directory to allow for database seeding (content for this is pending).
+
 ## [2025-06-22] Supabase Auth Integration & Profile Screen Fixes
 
 ### 🚀 **Major Feature: Supabase Authentication**
