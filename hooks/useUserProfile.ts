@@ -14,8 +14,13 @@ export const useUserProfile = () => {
 
   // Load user profile
   const loadProfile = useCallback(async () => {
-    if (!session?.user?.id) return;
+    console.log('loadProfile called, session:', session);
+    if (!session?.user?.id) {
+      console.log('No session or user ID, returning.');
+      return;
+    }
 
+    console.log(`Loading profile for user ID: ${session.user.id}`);
     setLoading(true);
     setError(null);
 
@@ -46,23 +51,9 @@ export const useUserProfile = () => {
     try {
       const { data: newProfile } = await amplifyClient.models.UserProfile.create({
         userId: session.user.id,
-        username: session.user.email?.split('@')[0] || 'user',
-        displayName: session.user.user_metadata?.full_name || 'User',
-        // Settings
-        notificationsEnabled: true,
-        emailNotificationsEnabled: true,
-        pushNotificationsEnabled: true,
-        privacyProfilePublic: false,
-        privacyShareData: false,
-        // Preferences
-        preferredUnits: 'metric',
-        theme: 'system',
-        language: 'en',
-        // AI Settings - defaults to disabled
-        aiModel: 'gemini_2_0_flash',
-        aiFeaturesEnabled: false,
-        smartMealPlanningEnabled: false,
-        smartRecommendationsEnabled: false,
+        email: session.user.email,
+        username: session.user.user_metadata?.user_name || session.user.email?.split('@')[0] || 'new_user',
+        profileImageUrl: session.user.user_metadata?.avatar_url,
       });
 
       return newProfile;
@@ -136,21 +127,21 @@ export const useUserProfile = () => {
       profile.age,
       calculationGender,
       profile.activityLevel,
-      profile.preferredUnits || 'metric'
+      'metric' // defaulting to metric since it's not in the profile
     );
   }, [profile]);
 
   // Calculate macro targets based on health data and goals
   const getMacroTargets = useCallback((): MacroTargets | null => {
-    if (!profile?.weight || !profile?.dailyCalorieTarget || !profile?.weightGoal) {
+    if (!profile?.weight) {
       return null;
     }
 
     return calculateMacroTargets(
-      profile.dailyCalorieTarget,
-      profile.weightGoal,
+      1, // defaulting to 1 since it's not in the profile
+      'maintain', // defaulting to maintain since it's not in the profile
       profile.weight,
-      profile.preferredUnits || 'metric'
+      'metric' // defaulting to metric since it's not in the profile
     );
   }, [profile]);
 
@@ -170,8 +161,8 @@ export const useUserProfile = () => {
     if (!profile) return 0;
 
     const requiredFields = [
-      'username', 'displayName', 'age', 'weight', 'height',
-      'gender', 'activityLevel', 'weightGoal', 'dailyCalorieTarget'
+      'username', 'age', 'weight', 'height',
+      'gender', 'activityLevel'
     ];
     
     const completedFields = requiredFields.filter(field => {

@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { AuthProvider, useAuth } from '../lib/AuthContext';
 import { amplifyClient, isAmplifyReady } from '../lib/amplify';
+import { View, ActivityIndicator, StyleSheet } from 'react-native';
 
 function InitialLayout() {
   const { session, loading } = useAuth();
@@ -37,6 +38,14 @@ function InitialLayout() {
     }
   }, [session, loading, segments]);
 
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <ActivityIndicator size="large" color="#007AFF" />
+      </View>
+    );
+  }
+
   return (
     <Stack
       screenOptions={{
@@ -45,6 +54,15 @@ function InitialLayout() {
     />
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+  },
+});
 
 export default function AppLayout() {
   return (

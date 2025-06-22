@@ -1,121 +1,75 @@
-// Type definitions for TypeScript - simplified approach to fix auth issues
-export type Recipe = {
-  id: string;
-  userId: string;
-  name: string;
-  description?: string;
-  ingredients: string[];
-  instructions: string[];
-  nutrition?: {
-    calories: number;
-    protein: number;
-    carbs: number;
-    fat: number;
-  };
-  imageUrl?: string;
-  createdAt: string;
-  updatedAt: string;
-  tags?: string[];
-  source?: string;
-  category?: string;
-  servings?: number;
-  prepTime?: number;
-  cookTime?: number;
-  difficulty?: string;
-};
+import { type ClientSchema, a, defineData } from '@aws-amplify/backend';
 
-export type SmartRecipe = {
-  id: string;
-  userId: string;
-  name: string;
-  description?: string;
-  ingredients: string[];
-  instructions: string[];
-  nutrition?: {
-    calories: number;
-    protein: number;
-    carbs: number;
-    fat: number;
-  };
-  imageUrl?: string;
-  createdAt: string;
-  updatedAt: string;
-  tags?: string[];
-  source?: string;
-  servings?: number;
-  prepTime?: number;
-  cookTime?: number;
-  difficulty?: string;
-};
+const schema = a.schema({
+  Recipe: a.model({
+    userId: a.string().required(),
+    name: a.string().required(),
+    description: a.string(),
+    ingredients: a.json(),
+    instructions: a.json(),
+    tags: a.string().array(),
+    imageUrl: a.string(),
+    source: a.string(),
+    category: a.string(),
+    servings: a.integer(),
+    prepTime: a.integer(),
+    cookTime: a.integer(),
+    difficulty: a.enum(['Easy', 'Medium', 'Hard']),
+  }).authorization(allow => [allow.publicApiKey()]),
 
-export type MealPlanEntry = {
-  id: string;
-  userId: string;
-  date: string;
-  mealType: 'breakfast' | 'lunch' | 'dinner' | 'snack1' | 'snack2';
-  recipeId: string;
-  recipeType: 'Recipe' | 'SmartRecipe';
-  notes?: string;
-  createdAt: string;
-  updatedAt: string;
-  servings?: number;
-  plannedCalories?: number;
-};
+  UserProfile: a.model({
+    userId: a.string().required(),
+    username: a.string(),
+    email: a.string(),
+    geminiApiKey: a.string(),
+    bio: a.string(),
+    profileImageUrl: a.string(),
+    age: a.integer(),
+    weight: a.float(),
+    height: a.float(),
+    gender: a.enum(['male', 'female', 'other']),
+    activityLevel: a.enum(['sedentary', 'lightly_active', 'moderately_active', 'very_active', 'extremely_active']),
+    dietaryPreferences: a.string().array(),
+    healthGoals: a.string().array(),
+    cookingSkill: a.enum(['beginner', 'intermediate', 'advanced']),
+  }).authorization(allow => [allow.publicApiKey()]),
 
-export type ShoppingListItem = {
-  id: string;
-  userId: string;
-  weekStartDate: string;
-  itemName: string;
-  quantity?: string;
-  unit?: string;
-  category?: string;
-  isCompleted: boolean;
-  recipeId?: string;
-  mealPlanEntryId?: string;
-  createdAt: string;
-  updatedAt: string;
-};
+  Todo: a.model({
+    userId: a.string().required(),
+    content: a.string(),
+    isDone: a.boolean(),
+  }).authorization(allow => [allow.publicApiKey()]),
 
-export type UserProfile = {
-  id: string;
-  userId: string;
-  name?: string;
-  username?: string;
-  email?: string;
-  bio?: string;
-  profileImageUrl?: string;
-  age?: number;
-  weight?: number;
-  height?: number;
-  gender?: 'male' | 'female' | 'other';
-  activityLevel?: 'sedentary' | 'lightly_active' | 'moderately_active' | 'very_active' | 'extremely_active';
-  weightGoal?: 'maintain' | 'lose' | 'gain';
-  targetWeight?: number;
-  dailyCalorieTarget?: number;
-  proteinTarget?: number;
-  carbTarget?: number;
-  fatTarget?: number;
-  dietaryRestrictions?: string[];
-  allergies?: string[];
-  dislikedIngredients?: string[];
-  preferredCuisines?: string[];
-  geminiApiKey?: string;
-  customRecipePrompt?: string;
-  customMealSuggestionsPrompt?: string;
-  smartFeaturesEnabled: boolean;
-  units: 'metric' | 'imperial';
-  theme: 'light' | 'dark' | 'auto';
-  notificationsEnabled: boolean;
-  createdAt: string;
-  updatedAt: string;
-};
+  SmartRecipe: a.model({
+    userId: a.string().required(),
+    recipeJson: a.json().required(),
+  }).authorization(allow => [allow.publicApiKey()]),
 
-// Unified Schema type for compatibility with amplifyClient
-export type Schema = {
-  Recipe: Recipe;
-  SmartRecipe: SmartRecipe;
-  MealPlanEntry: MealPlanEntry;
-  ShoppingListItem: ShoppingListItem;
-  UserProfile: UserProfile;
-};
+  MealPlanEntry: a.model({
+    userId: a.string().required(),
+    date: a.date().required(),
+    mealType: a.enum(['breakfast', 'lunch', 'dinner', 'snack']),
+    recipeId: a.string().required(),
+    recipeName: a.string(),
+  }).authorization(allow => [allow.publicApiKey()]),
+
+  ShoppingListItem: a.model({
+    userId: a.string().required(),
+    name: a.string().required(),
+    quantity: a.float(),
+    unit: a.string(),
+    isBought: a.boolean().default(false),
+  }).authorization(allow => [allow.publicApiKey()]),
+});
+
+export type Schema = ClientSchema<typeof schema>;
+
+export const data = defineData({
+  schema,
+  authorizationModes: {
+    defaultAuthorizationMode: 'apiKey',
+    apiKeyAuthorizationMode: {
+      expiresInDays: 365,
+    },
+  },
+});

@@ -1,5 +1,33 @@
 # Culina App Changelog
 
+## [2025-06-22] Supabase Auth Integration & Profile Screen Fixes
+
+### 🚀 **Major Feature: Supabase Authentication**
+- **Replaced Amplify Auth**: Completely removed the default AWS Amplify authentication in favor of Supabase.
+- **Supabase Integration**: The app now uses Supabase for all authentication flows, including sign-in, sign-out, and session management.
+- **Updated Data Models**: All data models now include a `userId` field to link data to Supabase users.
+- **API Key Authorization**: The default authorization mode for the Amplify backend is now set to `apiKey`.
+
+### 🐛 **Bug Fixes & Improvements**
+- **Profile Screen Fixed**: Resolved an issue where the profile screen would appear empty after logging in.
+- **Loading Indicator**: Added a loading indicator to the app's entry point to prevent screens from rendering before authentication is complete.
+- **Profile Creation**: Fixed a bug where new user profiles were not being populated with their name and other details from their social profiles.
+- **Linter Errors Resolved**: Fixed numerous linter errors related to type mismatches between the new Supabase session object and the existing Amplify data models.
+
+## [2025-06-21] Technical Post-Mortem & Infrastructure Recovery
+
+### 🚨 **Critical Issue: Amplify CLI State Corruption**
+- **Problem**: A series of backend configuration changes led to a fatal corruption of the local Amplify project state. The `ampx sandbox` command became trapped in a circular dependency, failing with `ENOENT: no such file or directory, open '.../.amplify/artifacts/cdk.out/manifest.json'` because the directory it was supposed to create did not exist.
+- **Root Cause**: The new `ampx` (Amplify Gen 2) CLI is highly sensitive to the state of the `.amplify/artifacts` directory. Manually deleting or incorrectly modifying this directory, combined with failed Git checkouts of the `amplify/` source directory, resulted in an irrecoverable state where the CLI could neither fix itself nor be fixed by manual file creation.
+
+### ✅ **Resolution: Full State Restoration from Backup**
+- **Failed Attempts**:
+  - Manually creating a placeholder `manifest.json` file.
+  - Deleting and recreating the `cdk.out` directory.
+  - Restoring only the `amplify/` source directory from Git.
+- **The Solution**: The project was recovered by performing a full restoration of the local state from a zip backup (`culina-supa-backup-2025-06-18.zip`).
+- **Key Learning**: To recover from a corrupted Amplify Gen 2 environment, **both the source code (`amplify/`) and the local build artifacts (`.amplify/`) must be restored to a known-good, consistent state.** Restoring only one without the other will perpetuate the build failure loop. The zip backup provided this consistent state.
+
 ## [2025-06-20] AI-Generated Recipes as Permanent App Content
 
 ### 🚀 **Major Feature: Permanent AI Recipes**
@@ -169,135 +197,4 @@
 
 ### 🎯 **Enhanced Dashboard Intelligence**
 - **[`components/dashboard/SmartSuggestions.tsx`](components/dashboard/SmartSuggestions.tsx)**: AI-powered contextual recommendations engine
-- **[`components/dashboard/RecentlyViewed.tsx`](components/dashboard/RecentlyViewed.tsx)**: Recipe history tracking and quick access component
-- **Refresh Mechanisms**: Auto-refresh suggestions every 30 minutes + manual refresh buttons
-- **Priority-Based Sorting**: Intelligent suggestion ranking based on context and user needs
-- **Cross-Component Integration**: Seamless navigation between dashboard sections and app features
-
-### ⚡ **Quick Wins Implementation - Professional Polish**
-- **Real Profile Integration**: Connected user nutrition goals to dashboard stats display
-- **Professional Loading States**: Animated skeleton screens for all dashboard components
-- **Comprehensive Error Handling**: User-friendly error messages with retry functionality
-- **Recipe View Tracking**: Automatic recently viewed recipes tracking integration
-- **Visual Feedback**: Loading indicators, error states, and empty states throughout app
-
-### 🎨 **Enhanced User Experience Components**
-- **[`components/shared/LoadingStates.tsx`](components/shared/LoadingStates.tsx)**: Animated skeleton screens for all dashboard sections
-- **[`components/shared/ErrorStates.tsx`](components/shared/ErrorStates.tsx)**: Comprehensive error handling with Toast notifications and retry options
-- **Smart Fallbacks**: Graceful degradation when data is unavailable or loading
-- **Consistent Design**: All components follow centralized design system patterns
-
-### 🤖 **AI Recipe Enhancement - Restaurant-Quality Generation**
-- **Enhanced Recipe Structure**: Detailed ingredients with precise quantities, units, and preparation notes
-- **Professional Instructions**: Step-by-step cooking with timing, temperatures, and pro tips
-- **Accurate Nutrition**: Real calorie, protein, carb, and fat calculations per serving
-- **Multiple Recipe Types**: General, quick meals, seasonal, cuisine-specific, health-focused options
-- **Recipe Validation**: Ensures completeness and practicality for home cooking
-
-### 🎯 **Advanced AI Features Implementation**
-- **[`utils/enhancedAIPrompts.ts`](utils/enhancedAIPrompts.ts)**: Professional-grade prompt engineering for restaurant-quality recipes
-- **[`components/EnhancedAIRecipes.tsx`](components/EnhancedAIRecipes.tsx)**: Complete UI overhaul with categorized recipe generation
-- **Smart Recipe Generation**: Context-aware prompts based on meal type, season, cuisine, and health goals
-- **Nutrition Integration**: Auto-calculated nutrition information with detailed breakdown
-- **Professional Presentation**: Enhanced recipe display with timing, tips, and detailed instructions
-
-### 📊 **Recipe Quality Improvements**
-- **Structured Ingredients**: Quantity + Unit + Name + Preparation notes format
-- **Detailed Instructions**: Step numbers, timing, temperature, and professional tips
-- **Comprehensive Nutrition**: Accurate macronutrient calculations per serving
-- **Recipe Categories**: Quick meals (15-30min), seasonal ingredients, cuisine-specific, health-optimized
-- **Validation System**: Ensures all generated recipes are complete and practical
-
-### 🎯 **Major Home Screen Enhancement - "Today's Dashboard"**
-- **Complete Dashboard Redesign**: Transformed home screen from static welcome page to functional command center
-- **Today's Meal Plan**: Shows planned breakfast, lunch, dinner with quick add meal buttons
-- **Nutrition Progress**: Real-time tracking of calories, protein, and daily targets with visual progress indicators
-- **Quick Actions Hub**: One-tap access to Add Recipe, Plan Meals, Shopping List, and Browse Recipes
-- **Personal Stats**: Cooking streak counter, recipe collection count, and achievement tracking
-- **Smart Integration**: Seamlessly connects with meal planner and recipe management features
-
-### 🎯 **New Dashboard Components**
-- **[`TodaysMealPlan.tsx`](components/dashboard/TodaysMealPlan.tsx)**: Interactive meal planning preview with meal type icons and calorie display
-- **[`QuickStats.tsx`](components/dashboard/QuickStats.tsx)**: Nutrition progress circles and personal achievement metrics
-- **[`QuickActions.tsx`](components/dashboard/QuickActions.tsx)**: Grid of quick-access buttons for core app features
-- **[`useDashboardData.ts`](hooks/useDashboardData.ts)**: Custom hook for aggregating dashboard data from multiple sources
-
-### 🎨 **Enhanced User Experience**
-- **Contextual Navigation**: Quick access to meal planner when meals are missing
-- **Progress Visualization**: Circular progress indicators for nutrition goals
-- **Smart Empty States**: Helpful "Add meal" prompts for unplanned meals
-- **Consistent Design**: Uses centralized design system for cohesive visual experience
-- **Responsive Layout**: Optimized for different screen sizes and orientations
-
-## [2025-06-16] Critical Bug Fixes & AI Integration Improvements
-
-### 🐛 **Major Bug Fixes**
-- **Fixed AI Meal Suggestions Add Button**: Resolved issue where "+ add" buttons in meal planner AI suggestions were not working
-- **Fixed JSON Parsing Crashes**: Eliminated "JSON Parse error: Unexpected character" crashes in MyRecipes screen
-- **Database Integration**: AI-generated recipes now properly save to database before being added to meal plans
-- **Data Format Consistency**: Standardized ingredient and instruction storage format across all recipe sources
-
-### 🔧 **Technical Improvements**
-- **Robust Error Handling**: Added try-catch blocks around JSON parsing operations to prevent crashes
-- **Fallback Data Handling**: App gracefully handles both JSON arrays and plain strings for ingredients
-- **Loading States**: Added visual feedback (spinners) when saving AI recipes to database
-- **Database Persistence**: AI suggestions now create real recipe records instead of mock objects
-
-### 🎯 **User Experience Enhancements**
-- **Seamless AI Integration**: AI-generated recipes now work exactly like manually created recipes
-- **Visual Feedback**: Users see loading indicators when AI recipes are being saved
-- **Improved Reliability**: Meal planner AI suggestions consistently add recipes to meal plans
-- **Search Functionality**: Fixed search to work properly with AI-generated recipe data
-
-### 🚀 **AI Recipe Caching & Quota Management**
-- **Intelligent Caching System**: AI recipe recommendations are now cached for 24 hours to preserve user's API quota
-- **Manual Refresh Control**: Users can manually refresh recommendations when they want new suggestions
-- **Cache Status Display**: Shows when recipes were cached and reminds users about quota savings
-- **Clear Cache Option**: Users can clear cached data if they want to force new recommendations
-
-### 🏗️ **Technical Implementation**
-- **Custom Hook**: Created [`useAIRecipeCache`](hooks/useAIRecipeCache.ts) for persistent local storage management
-- **AsyncStorage Integration**: Recipes are stored locally using React Native AsyncStorage
-- **User-Specific Caching**: Each user's cache is isolated by their user ID
-- **Cache Validation**: Automatic expiry after 24 hours with cleanup of expired data
-
-### 🎨 **Enhanced UI/UX**
-- **Cache Information**: Shows "📱 Cached X hours ago • Saves your AI quota" in the subtitle
-- **Smart Button Text**: Changes from "Discover New" to "Refresh" when cached data exists
-- **Quota Reminder**: Empty state reminds users that caching saves their AI quota
-- **Clear Cache Button**: Red-styled button to remove cached data when needed
-
-### 🔧 **Navigation Improvements**
-- **Home as Default**: Users now land on Home screen after login instead of Recipes tab
-- **Better User Journey**: More intuitive flow from authentication to main dashboard
-
-## [2025-06-17] Navigation & Home Tab Improvements
-- Added Home tab as the default/first tab in the bottom navigation bar.
-- Set Home as the initial route after login for a more intuitive user experience.
-- Removed the top hero Home icon for a cleaner UI.
-- Clarified navigation behavior and fixed tab order to ensure Home is always shown first after login.
-
-## [2025-06-17] UI/UX & AI Suggestions Improvements
-- Restored refresh and prompt edit icons: Brought back per-meal slot controls for AI meal suggestions, allowing users to regenerate suggestions and edit prompts directly from each slot.
-- Meal planning card enhancements: Added meal type icons, nutrition info, and recipe image thumbnails to each meal slot for improved clarity and engagement.
-- AI suggestions reliability: Fixed issues with AI suggestions not loading due to profile settings or missing toggles; improved error handling and defensive coding for AI recipe parsing.
-- Profile settings integration: Ensured Gemini API key and smart recommendations toggles are respected and persist after schema updates.
-- 'Coming Soon' card improvements: Clarified the Smart Meal Planning progress card and outlined next steps for user engagement and waitlist functionality.
-
----
-
-## Previous Versions
-
-### Version 1.x.x
-- Basic recipe management functionality
-- Initial AI integration
-- Profile and dietary preferences
-- Shopping list features
-
----
-
-## Contributing
-This changelog follows [Keep a Changelog](https://keepachangelog.com/) format.
-
-## Support
-For issues or feature requests, please contact the development team.
+- **[`

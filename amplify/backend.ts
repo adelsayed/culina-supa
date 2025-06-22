@@ -1,7 +1,6 @@
-// Import types for TypeScript support
-import type { Schema, Recipe, SmartRecipe, MealPlanEntry, ShoppingListItem, UserProfile } from './data/resource';
+import { defineBackend } from '@aws-amplify/backend';
+import { data } from './data/resource';
 
-// Export types for use in the application
-export type { Schema, Recipe, SmartRecipe, MealPlanEntry, ShoppingListItem, UserProfile };
-
-// ...rest of your backend logic...
+export const backend = defineBackend({
+  data,
+});
