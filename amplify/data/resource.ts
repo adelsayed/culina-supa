@@ -19,9 +19,18 @@ const schema = a.schema({
 
   UserProfile: a.model({
     userId: a.string().required(),
+    displayName: a.string(),
     username: a.string(),
     email: a.string(),
     geminiApiKey: a.string(),
+    openaiApiKey: a.string(),
+    aiModel: a.string(),
+    aiProvider: a.string(),
+    smartRecommendationsEnabled: a.boolean(),
+    smartMealPlanningEnabled: a.boolean(),
+    customRecipePrompt: a.string(),
+    customMealSuggestionsPrompt: a.string(),
+    preferredCuisines: a.string().array(),
     bio: a.string(),
     profileImageUrl: a.string(),
     age: a.integer(),
@@ -32,6 +41,14 @@ const schema = a.schema({
     dietaryPreferences: a.string().array(),
     healthGoals: a.string().array(),
     cookingSkill: a.enum(['beginner', 'intermediate', 'advanced']),
+    weightGoal: a.enum(['lose', 'maintain', 'gain']),
+    targetWeight: a.float(),
+    preferredUnits: a.enum(['metric', 'imperial']),
+    dailyCalorieTarget: a.float(),
+    pushNotificationsEnabled: a.boolean(),
+    emailNotificationsEnabled: a.boolean(),
+    privacyProfilePublic: a.boolean(),
+    privacyShareData: a.boolean(),
   }).authorization(allow => [allow.publicApiKey()]),
 
   Todo: a.model({

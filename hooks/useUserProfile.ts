@@ -51,6 +51,7 @@ export const useUserProfile = () => {
     try {
       const { data: newProfile } = await amplifyClient.models.UserProfile.create({
         userId: session.user.id,
+        displayName: session.user.user_metadata?.full_name || session.user.user_metadata?.user_name || session.user.email?.split('@')[0] || 'New User',
         email: session.user.email,
         username: session.user.user_metadata?.user_name || session.user.email?.split('@')[0] || 'new_user',
         profileImageUrl: session.user.user_metadata?.avatar_url,
@@ -71,18 +72,19 @@ export const useUserProfile = () => {
     setError(null);
 
     try {
+      console.log('updateProfile payload:', { id: profile.id, ...updates });
       const { data: updatedProfile } = await amplifyClient.models.UserProfile.update({
         id: profile.id,
         ...updates
       });
+      console.log('updateProfile API response:', updatedProfile);
 
       if (updatedProfile) {
         setProfile(updatedProfile);
         return true;
       }
-    } catch (err) {
-      console.error('Error updating profile:', err);
-      setError('Failed to update profile');
+    } catch (err: any) {
+      throw err;
     } finally {
       setLoading(false);
     }

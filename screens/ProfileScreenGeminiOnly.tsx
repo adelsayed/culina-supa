@@ -1,3 +1,4 @@
+console.log('LOADED: ProfileScreenGeminiOnly.tsx');
 import React, { useState } from 'react';
 import {
   View,

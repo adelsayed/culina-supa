@@ -92,6 +92,16 @@
 - **Error Recovery**: Helpful error messages with suggestions for alternative import methods
 - **Smart Fallbacks**: Automatic fallback to text import when URL extraction fails
 
+## [2024-06-23] AI Settings Save Fix & Restore Point
+
+### 🐛 **Bug Fixes & Improvements**
+- **AI Settings Save Fixed**: Resolved an issue where saving AI settings (including Gemini API key, model, and smart feature toggles) in the profile screen did not persist changes.
+- **Schema Update**: Added `smartMealPlanningEnabled` to the `UserProfile` model in the Amplify schema to ensure all AI settings can be saved and restored.
+- **Amplify Gen 2**: Confirmed schema and type updates are handled automatically in sandbox mode.
+
+### 🛡️ **Restore Point**
+- **Version Tag**: Created a new version and Git tag for this stable state, recommended as a restore point if future issues arise.
+
 ## Version 2.0.0 - Modern UI Redesign (December 16, 2025)
 
 ### 🎨 **Major UI/UX Improvements**

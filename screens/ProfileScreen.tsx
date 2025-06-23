@@ -1,3 +1,4 @@
+console.log('LOADED: ProfileScreen.tsx');
 import React, { useState } from 'react';
 import {
   View,
@@ -19,10 +20,12 @@ import { calculateWeightGoalProgress, getProgressMotivation, formatTimelineText,
 import DietaryPreferencesSection from './DietaryPreferencesSection';
 
 export default function ProfileScreen() {
+  console.log('render ProfileScreen');
   const { session, signOut } = useAuth();
   console.log('ProfileScreen session:', session);
 
   if (!session || !session.user) {
+    console.log('isEditing:', isEditing);
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.centerContent}>
@@ -48,20 +51,29 @@ export default function ProfileScreen() {
   const [isEditing, setIsEditing] = useState(false);
   const [showHealthModal, setShowHealthModal] = useState(false);
   const [editedProfile, setEditedProfile] = useState({
+    displayName: '',
     username: '',
     bio: '',
+    email: '',
+    profileImageUrl: '',
+    geminiApiKey: '',
+    cookingSkill: 'beginner' as 'beginner' | 'intermediate' | 'advanced',
+    dietaryPreferences: [] as string[],
+    healthGoals: [] as string[],
   });
   const [healthData, setHealthData] = useState({
     age: '',
     weight: '',
     height: '',
-    gender: 'prefer_not_to_say' as 'male' | 'female' | 'other' | 'prefer_not_to_say',
+    gender: 'male' as 'male' | 'female' | 'other',
     activityLevel: 'moderately_active' as 'sedentary' | 'lightly_active' | 'moderately_active' | 'very_active' | 'extremely_active',
+    // weightGoal, targetWeight, dailyCalorieTarget removed (not in backend)
   });
 
   // Always call hooks before any return
   if (!session || !session.user) {
     // Still call all hooks above, then render this fallback
+    console.log('isEditing:', isEditing);
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.centerContent}>
@@ -77,8 +89,15 @@ export default function ProfileScreen() {
   React.useEffect(() => {
     if (profile && !isEditing) {
       setEditedProfile({
+        displayName: profile.displayName || '',
         username: profile.username || '',
         bio: profile.bio || '',
+        email: profile.email || '',
+        profileImageUrl: profile.profileImageUrl || '',
+        geminiApiKey: profile.geminiApiKey || '',
+        cookingSkill: profile.cookingSkill || 'beginner',
+        dietaryPreferences: (profile.dietaryPreferences || []).map((x: any) => x ?? '').filter((x: string) => x !== ''),
+        healthGoals: (profile.healthGoals || []).map((x: any) => x ?? '').filter((x: string) => x !== ''),
       });
     }
   }, [profile, isEditing]);
@@ -90,7 +109,7 @@ export default function ProfileScreen() {
         age: profile.age?.toString() || '',
         weight: profile.weight?.toString() || '',
         height: profile.height?.toString() || '',
-        gender: profile.gender || 'prefer_not_to_say',
+        gender: profile.gender || 'male',
         activityLevel: profile.activityLevel || 'moderately_active',
       });
     }
@@ -99,26 +118,49 @@ export default function ProfileScreen() {
   const handleEdit = () => {
     setIsEditing(true);
     setEditedProfile({
+      displayName: profile?.displayName || '',
       username: profile?.username || '',
       bio: profile?.bio || '',
+      email: profile?.email || '',
+      profileImageUrl: profile?.profileImageUrl || '',
+      geminiApiKey: profile?.geminiApiKey || '',
+      cookingSkill: profile?.cookingSkill || 'beginner',
+      dietaryPreferences: (profile?.dietaryPreferences || []).map((x: any) => x ?? '').filter((x: string) => x !== ''),
+      healthGoals: (profile?.healthGoals || []).map((x: any) => x ?? '').filter((x: string) => x !== ''),
     });
   };
 
   const handleSave = async () => {
+    console.log('Save button clicked');
     setLoading(true);
     setError(null);
-    
     try {
-      const success = await updateProfile(editedProfile);
-      if (success) {
+      // Only send allowed fields
+      const updatePayload: any = {
+        displayName: editedProfile.displayName,
+        username: editedProfile.username,
+        bio: editedProfile.bio,
+        email: editedProfile.email,
+        profileImageUrl: editedProfile.profileImageUrl,
+        geminiApiKey: editedProfile.geminiApiKey,
+        cookingSkill: editedProfile.cookingSkill,
+        dietaryPreferences: editedProfile.dietaryPreferences,
+        healthGoals: editedProfile.healthGoals,
+      };
+      const result = await updateProfile(updatePayload);
+      console.log('updateProfile result:', result);
+      if (result === true) {
         setIsEditing(false);
         Alert.alert('Success', 'Profile updated successfully!');
       } else {
-        setError('Failed to update profile. Please try again.');
+        console.log('Profile update error:', result);
+        setError(result || 'Failed to update profile. Please try again.');
+        console.log('Error state:', result || 'Failed to update profile. Please try again.');
       }
     } catch (err: any) {
       console.error('Error saving profile:', err);
       setError(err.message || 'Failed to update profile. Please try again.');
+      console.log('Error state:', err.message || 'Failed to update profile. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -127,8 +169,15 @@ export default function ProfileScreen() {
   const handleCancel = () => {
     setIsEditing(false);
     setEditedProfile({
+      displayName: profile?.displayName || '',
       username: profile?.username || '',
       bio: profile?.bio || '',
+      email: profile?.email || '',
+      profileImageUrl: profile?.profileImageUrl || '',
+      geminiApiKey: profile?.geminiApiKey || '',
+      cookingSkill: profile?.cookingSkill || 'beginner',
+      dietaryPreferences: (profile?.dietaryPreferences || []).map((x: any) => x ?? '').filter((x: string) => x !== ''),
+      healthGoals: (profile?.healthGoals || []).map((x: any) => x ?? '').filter((x: string) => x !== ''),
     });
   };
 
@@ -166,57 +215,25 @@ export default function ProfileScreen() {
       Alert.alert('Missing Information', 'Please fill in age, weight, and height.');
       return;
     }
-
     setLoading(true);
     try {
-      // Calculate recommended calorie target if not provided
-      let calculatedCalorieTarget = healthData.dailyCalorieTarget ? parseInt(healthData.dailyCalorieTarget) : undefined;
-      
-      if (!calculatedCalorieTarget) {
-        // Calculate BMR and daily calorie needs
-        const { calculateBMR, calculateDailyCalorieNeeds } = await import('../utils/healthCalculations');
-        const gender = (healthData.gender === 'male' || healthData.gender === 'female') ? healthData.gender : 'male';
-        const units = profile?.preferredUnits || 'metric';
-        
-        const bmr = calculateBMR(
-          parseFloat(healthData.weight),
-          parseFloat(healthData.height),
-          parseInt(healthData.age),
-          gender,
-          units
-        );
-        
-        let dailyCalories = calculateDailyCalorieNeeds(bmr, healthData.activityLevel);
-        
-        // Adjust for weight goal
-        if (healthData.weightGoal === 'lose') {
-          dailyCalories -= 500; // 500 calorie deficit for 1lb/week loss
-        } else if (healthData.weightGoal === 'gain') {
-          dailyCalories += 300; // 300 calorie surplus for gradual gain
-        }
-        
-        calculatedCalorieTarget = dailyCalories;
-      }
-
-      const success = await updateProfile({
+      // Only send allowed fields
+      const updatePayload: any = {
         age: parseInt(healthData.age),
         weight: parseFloat(healthData.weight),
         height: parseFloat(healthData.height),
         gender: healthData.gender,
         activityLevel: healthData.activityLevel,
-        weightGoal: healthData.weightGoal,
-        targetWeight: healthData.targetWeight ? parseFloat(healthData.targetWeight) : undefined,
-        dailyCalorieTarget: calculatedCalorieTarget,
-      });
-
+      };
+      const success = await updateProfile(updatePayload);
       if (success) {
         setShowHealthModal(false);
         Alert.alert('Success', 'Health data and goals saved successfully!');
       } else {
         Alert.alert('Error', 'Failed to save health data.');
       }
-    } catch (error) {
-      Alert.alert('Error', 'Failed to save health data.');
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to save health data.');
     } finally {
       setLoading(false);
     }
@@ -232,6 +249,8 @@ export default function ProfileScreen() {
       </SafeAreaView>
     );
   }
+
+  console.log('isEditing:', isEditing);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -315,46 +334,7 @@ export default function ProfileScreen() {
                     )}
                     
                     {/* Goal Progress */}
-                    {profile?.weightGoal && profile?.weightGoal !== 'maintain' && profile?.weight && profile?.targetWeight && (
-                      (() => {
-                        const progress = calculateWeightGoalProgress(
-                          profile.weight,
-                          profile.targetWeight,
-                          profile.weightGoal
-                        );
-                        const motivation = getProgressMotivation(progress);
-                        const timeline = formatTimelineText(progress.estimatedWeeksToGoal);
-                        
-                        return (
-                          <View style={styles.goalRow}>
-                            <Text style={styles.goalTitle}>
-                              {profile.weightGoal === 'lose' ? 'Weight Loss Goal' : 'Weight Gain Goal'}
-                            </Text>
-                            <View style={styles.goalProgress}>
-                              <View style={styles.goalStats}>
-                                <Text style={styles.goalText}>
-                                  Current: {profile.weight}{profile.preferredUnits === 'metric' ? 'kg' : 'lbs'}
-                                </Text>
-                                <Text style={styles.goalText}>
-                                  Target: {profile.targetWeight}{profile.preferredUnits === 'metric' ? 'kg' : 'lbs'}
-                                </Text>
-                                <Text style={styles.goalRemaining}>
-                                  {progress.remainingWeight.toFixed(1)}{profile.preferredUnits === 'metric' ? 'kg' : 'lbs'} to go
-                                </Text>
-                              </View>
-                              <View style={styles.goalTimeline}>
-                                <Text style={styles.goalTimelineText}>
-                                  Est. {timeline} to goal
-                                </Text>
-                                <Text style={styles.goalMotivation}>
-                                  {motivation}
-                                </Text>
-                              </View>
-                            </View>
-                          </View>
-                        );
-                      })()
-                    )}
+                    {/* Goal progress UI removed: weightGoal, targetWeight, preferredUnits not in backend */}
                   </>
                 ) : null;
               })()}
@@ -454,50 +434,14 @@ export default function ProfileScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Notifications</Text>
           
-          <View style={styles.settingRow}>
-            <Text style={styles.settingLabel}>Push Notifications</Text>
-            <Switch
-              value={profile?.pushNotificationsEnabled || false}
-              onValueChange={(value) => updateSetting('pushNotificationsEnabled', value)}
-              trackColor={{ false: '#767577', true: '#81b0ff' }}
-              thumbColor={profile?.pushNotificationsEnabled ? '#007AFF' : '#f4f3f4'}
-            />
-          </View>
-
-          <View style={styles.settingRow}>
-            <Text style={styles.settingLabel}>Email Notifications</Text>
-            <Switch
-              value={profile?.emailNotificationsEnabled || false}
-              onValueChange={(value) => updateSetting('emailNotificationsEnabled', value)}
-              trackColor={{ false: '#767577', true: '#81b0ff' }}
-              thumbColor={profile?.emailNotificationsEnabled ? '#007AFF' : '#f4f3f4'}
-            />
-          </View>
+          {/* Notification settings UI removed: pushNotificationsEnabled, emailNotificationsEnabled not in backend */}
         </View>
 
         {/* Privacy */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Privacy</Text>
           
-          <View style={styles.settingRow}>
-            <Text style={styles.settingLabel}>Public Profile</Text>
-            <Switch
-              value={profile?.privacyProfilePublic || false}
-              onValueChange={(value) => updateSetting('privacyProfilePublic', value)}
-              trackColor={{ false: '#767577', true: '#81b0ff' }}
-              thumbColor={profile?.privacyProfilePublic ? '#007AFF' : '#f4f3f4'}
-            />
-          </View>
-
-          <View style={styles.settingRow}>
-            <Text style={styles.settingLabel}>Share Usage Data</Text>
-            <Switch
-              value={profile?.privacyShareData || false}
-              onValueChange={(value) => updateSetting('privacyShareData', value)}
-              trackColor={{ false: '#767577', true: '#81b0ff' }}
-              thumbColor={profile?.privacyShareData ? '#007AFF' : '#f4f3f4'}
-            />
-          </View>
+          {/* Privacy settings UI removed: privacyProfilePublic, privacyShareData not in backend */}
         </View>
 
         {/* Dietary Preferences */}
@@ -553,22 +497,22 @@ export default function ProfileScreen() {
 
               <View style={styles.inputRow}>
                 <View style={styles.inputHalf}>
-                  <Text style={styles.label}>Weight ({profile?.preferredUnits === 'metric' ? 'kg' : 'lbs'})</Text>
+                  <Text style={styles.label}>Weight (kg)</Text>
                   <TextInput
                     style={styles.input}
                     value={healthData.weight}
                     onChangeText={(text) => setHealthData({ ...healthData, weight: text })}
-                    placeholder={profile?.preferredUnits === 'metric' ? '70' : '154'}
+                    placeholder="70"
                     keyboardType="numeric"
                   />
                 </View>
                 <View style={styles.inputHalf}>
-                  <Text style={styles.label}>Height ({profile?.preferredUnits === 'metric' ? 'cm' : 'inches'})</Text>
+                  <Text style={styles.label}>Height (cm)</Text>
                   <TextInput
                     style={styles.input}
                     value={healthData.height}
                     onChangeText={(text) => setHealthData({ ...healthData, height: text })}
-                    placeholder={profile?.preferredUnits === 'metric' ? '175' : '69'}
+                    placeholder="175"
                     keyboardType="numeric"
                   />
                 </View>
@@ -581,7 +525,6 @@ export default function ProfileScreen() {
                     { value: 'male', label: 'Male' },
                     { value: 'female', label: 'Female' },
                     { value: 'other', label: 'Other' },
-                    { value: 'prefer_not_to_say', label: 'Prefer not to say' },
                   ].map((option) => (
                     <TouchableOpacity
                       key={option.value}
@@ -638,59 +581,7 @@ export default function ProfileScreen() {
               </View>
 
               {/* Goals Section */}
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Health Goals</Text>
-                <View style={styles.optionGrid}>
-                  {[
-                    { value: 'lose', label: 'Lose Weight' },
-                    { value: 'maintain', label: 'Maintain Weight' },
-                    { value: 'gain', label: 'Gain Weight' },
-                  ].map((goal) => (
-                    <TouchableOpacity
-                      key={goal.value}
-                      style={[
-                        styles.optionButton,
-                        healthData.weightGoal === goal.value && styles.selectedOption
-                      ]}
-                      onPress={() => setHealthData({ ...healthData, weightGoal: goal.value as any })}
-                    >
-                      <Text style={[
-                        styles.optionText,
-                        healthData.weightGoal === goal.value && styles.selectedOptionText
-                      ]}>
-                        {goal.label}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </View>
-
-              {healthData.weightGoal !== 'maintain' && (
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Target Weight ({profile?.preferredUnits === 'metric' ? 'kg' : 'lbs'})</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={healthData.targetWeight}
-                    onChangeText={(text) => setHealthData({ ...healthData, targetWeight: text })}
-                    placeholder="Enter target weight"
-                    keyboardType="numeric"
-                  />
-                </View>
-              )}
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Daily Calorie Target (optional)</Text>
-                <TextInput
-                  style={styles.input}
-                  value={healthData.dailyCalorieTarget}
-                  onChangeText={(text) => setHealthData({ ...healthData, dailyCalorieTarget: text })}
-                  placeholder="Leave blank for automatic calculation"
-                  keyboardType="numeric"
-                />
-                <Text style={styles.inputHint}>
-                  We'll calculate this based on your data if left blank
-                </Text>
-              </View>
+              {/* Health Goals UI removed: weightGoal, targetWeight, dailyCalorieTarget not in backend */}
             </View>
           </ScrollView>
         </SafeAreaView>
@@ -849,20 +740,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     alignItems: 'center',
   },
-  saveButton: {
-    backgroundColor: '#2563eb',
-    borderRadius: 24,
-    paddingVertical: 14,
-    paddingHorizontal: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#2563eb',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    elevation: 2,
-    minWidth: 180,
-  },
+  // Removed duplicate saveButton style
   saveButtonDisabled: {
     backgroundColor: '#93c5fd',
   },
