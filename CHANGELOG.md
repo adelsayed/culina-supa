@@ -1,5 +1,18 @@
 # Culina App Changelog
 
+## [2025-06-22] Meal Plan Entry Creation Fix
+
+### 🐛 **Critical Bug Fixes**
+- **Meal Plan Entry Creation Fixed**: Resolved issue where meal plan entries were failing to create with the error "The variables input contains a field that is not defined for input object type 'CreateMealPlanEntryInput'."
+- **Undefined Field Handling**: Fixed the `plannedCalories` field being sent as `undefined`, which is invalid for GraphQL mutations. Now only includes the field when it has a defined value.
+- **Recipe Loading Enhancement**: Added automatic recipe reloading after adding meal plan entries to ensure saved recipes appear correctly in the meal planner instead of showing as "Unknown Recipe".
+- **Debug Logging**: Added comprehensive error logging and user-facing alerts to surface backend errors in the UI for better debugging.
+
+### 🔧 **Technical Improvements**
+- **Schema Alignment**: Updated `MealPlanEntry` schema to include `snack1`, `snack2`, `servings`, and `plannedCalories` fields to match frontend expectations.
+- **Error Visibility**: Enhanced error handling to show backend errors in user alerts instead of silent failures.
+- **Data Consistency**: Improved meal plan entry creation to ensure proper linking between entries and recipes.
+
 ## [2025-06-22] Infrastructure & Tooling Updates
 
 ### 🔧 **Build & Configuration**
