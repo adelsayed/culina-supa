@@ -5,7 +5,7 @@ import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../constants/DesignSystem';
 import { useAuth } from '../../lib/AuthContext';
-import { amplifyClient } from '../../lib/amplify';
+import { getAmplifyClient } from '../../lib/amplify';
 
 interface RecentRecipe {
   id: string;

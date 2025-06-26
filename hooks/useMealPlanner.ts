@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { isAmplifyReady, amplifyClient } from '../lib/amplify';
+import { getAmplifyClient } from '../lib/amplify';
 import type { Schema } from '../amplify/data/resource';
 import { useAuth } from '../lib/AuthContext';
 import {
@@ -80,10 +80,11 @@ export const useMealPlanner = (initialWeekStart?: Date) => {
     setError(null);
 
     try {
-      console.log('🔍 Debug: Checking amplifyClient:', !!amplifyClient);
-      console.log('🔍 Debug: Checking amplifyClient.models:', !!amplifyClient?.models);
+      const client = getAmplifyClient();
+      console.log('🔍 Debug: Checking getAmplifyClient:', !!client);
+      console.log('🔍 Debug: Checking client.models:', !!client?.models);
       
-      if (!amplifyClient || !amplifyClient.models) {
+      if (!client || !client.models) {
         console.log('⚠️ Amplify models not available, using empty meal plan');
         setMealPlanEntries([]);
         setRecipes([]);
@@ -92,7 +93,7 @@ export const useMealPlanner = (initialWeekStart?: Date) => {
       }
 
       // Check if specific models exist
-      const models = amplifyClient.models as any;
+      const models = client.models as any;
       if (!models.MealPlanEntry || !models.Recipe) {
         console.log('⚠️ Required models not found, using empty meal plan');
         setMealPlanEntries([]);
@@ -148,6 +149,12 @@ export const useMealPlanner = (initialWeekStart?: Date) => {
           recipe = userRecipes?.find((r: any) => r.id === entry.recipeId);
         } else if (entry.recipeType === 'SmartRecipe') {
           recipe = smartRecipes?.find((r: any) => r.id === entry.recipeId);
+        } else {
+          // Fallback for entries without recipeType
+          recipe = userRecipes?.find((r: any) => r.id === entry.recipeId) || smartRecipes?.find((r: any) => r.id === entry.recipeId);
+        }
+        if (!recipe) {
+          console.warn('No recipe found for entry.recipeId:', entry.recipeId, 'Available recipe IDs:', userRecipes?.map((r: any) => r.id), smartRecipes?.map((r: any) => r.id));
         }
         return { ...entry, recipe };
       });
@@ -174,7 +181,8 @@ export const useMealPlanner = (initialWeekStart?: Date) => {
     if (!session?.user?.id) return false;
 
     // Check if backend is available
-    if (!amplifyClient?.models || !(amplifyClient.models as any).MealPlanEntry) {
+    const client = getAmplifyClient();
+    if (!client || !client.models || !(client.models as any).MealPlanEntry) {
       setError('Meal planning not available - backend not configured');
       return false;
     }
@@ -184,42 +192,57 @@ export const useMealPlanner = (initialWeekStart?: Date) => {
         ? recipe.nutrition.calories * servings
         : undefined;
 
-      const { data: newEntry } = await (amplifyClient.models as any).MealPlanEntry.create({
+      const entryInput: any = {
         userId: session.user.id,
         date: formatDateForAPI(date),
         mealType,
         recipeId: recipe.id,
-        recipeType: recipe.source === 'AI' ? 'SmartRecipe' : 'Recipe',
         servings,
-        plannedCalories,
-      });
+      };
+      if (typeof plannedCalories === 'number') {
+        entryInput.plannedCalories = plannedCalories;
+      }
+      console.log('Attempting to create MealPlanEntry:', entryInput);
+      const { data: newEntry, errors } = await (client.models as any).MealPlanEntry.create(entryInput);
+      console.log('MealPlanEntry create result:', newEntry, errors);
 
+      if (errors) {
+        throw new Error(errors.map((e: { message: string }) => e.message).join('\n'));
+      }
+      
       if (newEntry) {
-        setMealPlanEntries(prev => [...prev, { ...newEntry, recipe }]);
+        // Ensure createdAt is a string before adding to state
+        const entryWithCreatedAt: MealPlanEntryWithRecipe = { 
+          ...newEntry, 
+          createdAt: newEntry.createdAt || new Date().toISOString(),
+          recipe: recipes.find(r => r.id === recipe.id)
+        };
+        setMealPlanEntries(prev => [...prev, entryWithCreatedAt]);
         return true;
       }
-    } catch (err) {
+      return false;
+
+    } catch (err: any) {
       console.error('Error adding meal plan entry:', err);
-      setError('Failed to add meal to plan - backend not available');
+      setError(`Error adding meal to plan: ${err.message}`);
     }
     return false;
-  }, [session?.user?.id]);
+  }, [session?.user?.id, recipes, setRecipes]);
 
   // Remove entry
-  const removeMealPlanEntry = useCallback(async (entryId: string) => {
-    // Check if backend is available
-    if (!amplifyClient?.models || !(amplifyClient.models as any).MealPlanEntry) {
+  const removeMealPlanEntry = useCallback(async (entryId: string): Promise<boolean> => {
+    const client = getAmplifyClient();
+    if (!client || !client.models || !(client.models as any).MealPlanEntry) {
       setError('Meal planning not available - backend not configured');
       return false;
     }
 
     try {
-      await (amplifyClient.models as any).MealPlanEntry.delete({ id: entryId });
+      await (client.models as any).MealPlanEntry.delete({ id: entryId });
       setMealPlanEntries(prev => prev.filter(entry => (entry as any).id !== entryId));
       return true;
-    } catch (err) {
-      console.error('Error removing meal plan entry:', err);
-      setError('Failed to remove meal from plan - backend not available');
+    } catch (err: any) {
+      setError(`Error deleting meal plan entry: ${err.message}`);
       return false;
     }
   }, []);
@@ -230,13 +253,14 @@ export const useMealPlanner = (initialWeekStart?: Date) => {
     updates: Partial<MealPlanEntry>
   ) => {
     // Check if backend is available
-    if (!amplifyClient?.models || !(amplifyClient.models as any).MealPlanEntry) {
+    const client = getAmplifyClient();
+    if (!client || !client.models || !(client.models as any).MealPlanEntry) {
       setError('Meal planning not available - backend not configured');
       return false;
     }
 
     try {
-      const { data: updatedEntry } = await (amplifyClient.models as any).MealPlanEntry.update({
+      const { data: updatedEntry } = await (client.models as any).MealPlanEntry.update({
         id: entryId,
         ...updates,
       });

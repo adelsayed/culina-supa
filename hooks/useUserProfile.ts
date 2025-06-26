@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { amplifyClient } from '../lib/amplify';
+import { getAmplifyClient } from '../lib/amplify';
 import type { Schema } from '../amplify/data/resource';
 import { useAuth } from '../lib/AuthContext';
 import { calculateHealthMetrics, calculateMacroTargets, type HealthMetrics, type MacroTargets } from '../utils/healthCalculations';
@@ -25,7 +25,8 @@ export const useUserProfile = () => {
     setError(null);
 
     try {
-      const { data: profiles } = await amplifyClient.models.UserProfile.list({
+      const client = getAmplifyClient();
+      const { data: profiles } = await client.models.UserProfile.list({
         filter: { userId: { eq: session.user.id } }
       });
 
@@ -49,7 +50,8 @@ export const useUserProfile = () => {
     if (!session?.user?.id) return null;
 
     try {
-      const { data: newProfile } = await amplifyClient.models.UserProfile.create({
+      const client = getAmplifyClient();
+      const { data: newProfile } = await client.models.UserProfile.create({
         userId: session.user.id,
         displayName: session.user.user_metadata?.full_name || session.user.user_metadata?.user_name || session.user.email?.split('@')[0] || 'New User',
         email: session.user.email,
@@ -72,8 +74,9 @@ export const useUserProfile = () => {
     setError(null);
 
     try {
+      const client = getAmplifyClient();
       console.log('updateProfile payload:', { id: profile.id, ...updates });
-      const { data: updatedProfile } = await amplifyClient.models.UserProfile.update({
+      const { data: updatedProfile } = await client.models.UserProfile.update({
         id: profile.id,
         ...updates
       });
@@ -97,7 +100,8 @@ export const useUserProfile = () => {
     if (!profile?.id) return false;
 
     try {
-      await amplifyClient.models.UserProfile.delete({ id: profile.id });
+      const client = getAmplifyClient();
+      await client.models.UserProfile.delete({ id: profile.id });
       setProfile(null);
       return true;
     } catch (err) {

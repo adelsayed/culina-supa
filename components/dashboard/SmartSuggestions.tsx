@@ -5,7 +5,7 @@ import { useRouter } from 'expo-router';
 import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../constants/DesignSystem';
 import { useUserProfile } from '../../hooks/useUserProfile';
 import { useDashboardData } from '../../hooks/useDashboardData';
-import { amplifyClient } from '../../lib/amplify';
+import { getAmplifyClient } from '../../lib/amplify';
 import { useAuth } from '../../lib/AuthContext';
 
 interface SmartSuggestion {
@@ -28,6 +28,7 @@ export default function SmartSuggestions() {
   const [suggestions, setSuggestions] = useState<SmartSuggestion[]>([]);
   const [weather, setWeather] = useState<string>('clear');
   const [recipes, setRecipes] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
 
   // Generate smart suggestions based on context
   const generateSuggestions = useCallback(async () => {
@@ -35,13 +36,15 @@ export default function SmartSuggestions() {
     const currentHour = new Date().getHours();
     const currentDay = new Date().getDay();
 
-
     // Load user's recipes for recipe suggestions
     let userRecipes: any[] = [];
-    if (session?.user?.id) {
+    if (profile?.userId) {
       try {
-        const { data: recipeData } = await amplifyClient.models.Recipe.list({
-          filter: { userId: { eq: session.user.id } }
+        const client = getAmplifyClient();
+        const { data: recipeData } = await client.models.Recipe.list({
+          filter: {
+            userId: { eq: profile.userId },
+          }
         });
         userRecipes = recipeData || [];
         setRecipes(userRecipes);

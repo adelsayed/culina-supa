@@ -12,7 +12,7 @@ import {
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { amplifyClient } from '../lib/amplify';
+import { getAmplifyClient } from '../lib/amplify';
 import type { Schema } from '../amplify/data/resource';
 import { useAuth } from '../lib/AuthContext';
 
@@ -52,7 +52,8 @@ const RecipePicker: React.FC<RecipePickerProps> = ({
 
     setLoading(true);
     try {
-      const { data } = await amplifyClient.models.Recipe.list({
+      const client = getAmplifyClient();
+      const { data } = await client.models.Recipe.list({
         filter: { userId: { eq: session.user.id } }
       });
       setRecipes(data || []);

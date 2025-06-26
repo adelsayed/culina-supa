@@ -17,7 +17,7 @@ import {
   navigateWeek,
   formatDateForAPI 
 } from '../utils/dateUtils';
-import { amplifyClient } from '../lib/amplify';
+import { getAmplifyClient } from '../lib/amplify';
 import { useAuth } from '../lib/AuthContext';
 import { useRouter } from 'expo-router';
 import type { Schema } from '../amplify/data/resource';
@@ -67,9 +67,10 @@ const MealPlanDatePicker: React.FC<MealPlanDatePickerProps> = ({
 
     setAdding(true);
     try {
+      const client = getAmplifyClient();
       const plannedCalories = recipe.calories ? recipe.calories * servings : undefined;
 
-      await amplifyClient.models.MealPlanEntry.create({
+      await client.models.MealPlanEntry.create({
         userId: session.user.id,
         date: formatDateForAPI(selectedDate),
         mealType: selectedMealType,

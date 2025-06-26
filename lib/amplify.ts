@@ -1,28 +1,34 @@
 import { Amplify } from 'aws-amplify';
-import { generateClient } from 'aws-amplify/data';
-import { fetchAuthSession } from 'aws-amplify/auth';
 import type { Schema } from '../amplify/data/resource';
 import outputs from '../amplify_outputs.json';
+import { Client, generateClient } from 'aws-amplify/data';
 
-// Configure Amplify with the outputs from the backend deployment
-Amplify.configure(outputs);
+let client: Client<Schema> | null = null;
 
-// Create and export the real Amplify client, configured to use API key authentication
-export const amplifyClient = generateClient<Schema>({
-  authMode: 'apiKey'
-});
-
-// Export a function to check if Amplify is ready (optional, but good practice)
-export const isAmplifyReady = async () => {
-  try {
-    // A simple check to see if config is loaded by trying to fetch a session
-    await fetchAuthSession();
-    console.log('Amplify is configured and ready.');
-    return true;
-  } catch (error) {
-    // We expect an error here if the user is not signed in, which is fine.
-    // It still proves the library is configured.
-    console.log('Amplify is configured and ready (guest mode).');
-    return true;
+export async function initializeAmplify() {
+  if (client) {
+    return; // Already initialized
   }
-};
+  
+  console.log('Initializing Amplify...');
+  // Configure Amplify with the outputs from the backend deployment
+  Amplify.configure(outputs);
+
+  // NOTE: We are NOT dynamically importing anymore, as that was part of the
+  // failed proxy experiment. The configuration delay in _layout.tsx is the
+  // primary fix for the race condition.
+  client = generateClient<Schema>({
+    authMode: 'apiKey'
+  });
+  
+  console.log('Amplify configured and client generated successfully.');
+}
+
+export function getAmplifyClient(): Client<Schema> {
+  if (!client) {
+    throw new Error(
+      'Amplify client has not been initialized. Call initializeAmplify() first.'
+    );
+  }
+  return client;
+}

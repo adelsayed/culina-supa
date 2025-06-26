@@ -27,7 +27,7 @@
       <dict>
         <key>CFBundleURLSchemes</key>
         <array>
-          <string>com.supabase</string>
+          <string>culina</string>
           <string>auth.adel.com.supabase</string>
         </array>
       </dict>

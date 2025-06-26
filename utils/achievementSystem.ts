@@ -110,7 +110,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     id: 'weekly_warrior_7',
     title: 'Weekly Warrior',
     description: 'Plan meals for 7 days in a row',
-    icon: 'fire',
+    icon: 'flame',
     color: '#DC2626',
     category: 'planning',
     requirement: { type: 'streak', target: 7, metric: 'daily_planning_streak' },

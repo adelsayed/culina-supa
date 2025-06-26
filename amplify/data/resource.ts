@@ -14,6 +14,10 @@ const schema = a.schema({
     servings: a.integer(),
     prepTime: a.integer(),
     cookTime: a.integer(),
+    calories: a.integer(),
+    protein: a.integer(),
+    carbs: a.integer(),
+    fat: a.integer(),
     difficulty: a.enum(['Easy', 'Medium', 'Hard']),
   }).authorization(allow => [allow.publicApiKey()]),
 
@@ -65,9 +69,11 @@ const schema = a.schema({
   MealPlanEntry: a.model({
     userId: a.string().required(),
     date: a.date().required(),
-    mealType: a.enum(['breakfast', 'lunch', 'dinner', 'snack']),
+    mealType: a.enum(['breakfast', 'lunch', 'dinner', 'snack', 'snack1', 'snack2']),
     recipeId: a.string().required(),
     recipeName: a.string(),
+    servings: a.float().default(1),
+    plannedCalories: a.float(),
   }).authorization(allow => [allow.publicApiKey()]),
 
   ShoppingListItem: a.model({

@@ -230,4 +230,17 @@
 
 ### 🎯 **Enhanced Dashboard Intelligence**
 - **[`components/dashboard/SmartSuggestions.tsx`](components/dashboard/SmartSuggestions.tsx)**: AI-powered contextual recommendations engine
-- **[`
+- **[`hooks/useSmartSuggestions.ts`](hooks/useSmartSuggestions.ts)**: Custom hook for managing and fetching smart suggestions
+- **Performance Optimization**: Code-splitting and lazy loading for dashboard components
+- **Intelligent Caching**: Cached suggestions with automatic updates based on user behavior
+
+## [2025-06-26] Supabase Password Reset Flow Fixes
+
+### 🐛 **Bug Fixes**
+- **Password Reset Flow**: Fixed an issue where users clicking the password reset link from their email were redirected to the recipes list instead of the reset password screen. The app now correctly detects the Supabase recovery session and shows the set new password form.
+- **Session Recovery Detection**: Improved logic in both `_layout.tsx` and `ResetPasswordScreen.tsx` to reliably detect when a user is in a password recovery state, even if the recovery tokens are not present in the URL.
+- **User Experience**: Users are now taken directly to the new password form after clicking the reset link, without being asked for their email again.
+
+### 🔧 **Technical Improvements**
+- **Navigation Logic**: Refactored navigation in `_layout.tsx` to prioritize password recovery state and avoid false redirects.
+- **Recovery Session Handling**: Enhanced `ResetPasswordScreen.tsx` to check for an active recovery session on mount, ensuring the correct UI is shown regardless of how the user arrives at the screen.

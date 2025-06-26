@@ -6,7 +6,7 @@
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
-    "scheme": "com.supabase",
+    "scheme": "culina",
     "assetBundlePatterns": [
       "**/*"
     ],
@@ -45,7 +45,8 @@
     },
     "plugins": [
       "expo-secure-store",
-      "expo-router"
+      "expo-router",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true,

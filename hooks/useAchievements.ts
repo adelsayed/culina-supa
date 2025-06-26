@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../lib/AuthContext';
-import { amplifyClient } from '../lib/amplify';
+import { getAmplifyClient } from '../lib/amplify';
 import { 
   Achievement, 
   UserStats, 
@@ -64,14 +64,14 @@ export function useAchievements() {
   // Calculate initial stats from database
   const calculateInitialStats = async (userId: string) => {
     try {
-      // Get recipes count
-      const { data: recipes } = await amplifyClient.models.Recipe.list({
-        filter: { userId: { eq: userId } }
+      const client = getAmplifyClient();
+      // Fetch recipe count
+      const { data: recipes } = await client.models.Recipe.list({
+        filter: { userId: { eq: userId } },
       });
-
-      // Get meal plan entries count
-      const { data: mealEntries } = await amplifyClient.models.MealPlanEntry.list({
-        filter: { userId: { eq: userId } }
+      // Fetch meal plan count
+      const { data: mealEntries } = await client.models.MealPlanEntry.list({
+        filter: { userId: { eq: userId } },
       });
 
       const initialStats: UserStats = {

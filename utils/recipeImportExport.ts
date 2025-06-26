@@ -279,7 +279,7 @@ export class RecipeImportService {
         prepTime: recipeData.prepTime || 0,
         cookTime: recipeData.cookTime || 0,
         servings: recipeData.servings || 4,
-        difficulty: recipeData.difficulty || 'medium',
+        difficulty: normalizeDifficulty(recipeData.difficulty),
         category: recipeData.category || 'Main Course',
         nutrition: recipeData.nutrition || undefined,
       }));
@@ -299,7 +299,7 @@ export class RecipeImportService {
         prepTime: recipe.prepTime || 0,
         cookTime: recipe.cookTime || 0,
         servings: recipe.servings || 4,
-        difficulty: recipe.difficulty || 'medium',
+        difficulty: normalizeDifficulty(recipe.difficulty),
         category: recipe.category || 'Main Course',
         calories: recipe.nutrition?.calories || 0,
         protein: recipe.nutrition?.protein || 0,
@@ -486,4 +486,13 @@ export class TextRecipeParser {
 
     return [recipe];
   }
+}
+
+// Utility to normalize difficulty to schema format
+function normalizeDifficulty(difficulty?: string): 'Easy' | 'Medium' | 'Hard' {
+  if (!difficulty) return 'Medium';
+  const d = difficulty.toLowerCase();
+  if (d === 'easy') return 'Easy';
+  if (d === 'hard') return 'Hard';
+  return 'Medium';
 }

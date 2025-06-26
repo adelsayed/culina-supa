@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, StyleSheet, Image, TouchableOpacity, ActivityIndicator, TextInput, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { amplifyClient } from '../lib/amplify';
+import { getAmplifyClient } from '../lib/amplify';
 import type { Schema } from '../amplify/data/resource';
 import { useAuth } from '../lib/AuthContext';
 import { dummyRecipes } from '../data/dummyRecipes';
@@ -162,16 +162,13 @@ const MyRecipesWithAmplify: React.FC = () => {
           style: 'destructive',
           onPress: async () => {
             try {
-              // Check if Amplify models are available
-              if (!amplifyClient?.models || !(amplifyClient.models as any).Recipe) {
-                Alert.alert('Error', 'Recipe backend not configured');
+              const client = getAmplifyClient();
+              if (!client?.models || !(client.models as any).Recipe) {
+                console.error('Recipe model is not available.');
                 return;
               }
-              
-              await (amplifyClient.models as any).Recipe.delete({ id });
-              // Remove from favorites if it was favorited
-              setFavorites(prev => prev.filter(fav => fav !== id));
-              // Note: The subscription will automatically update the recipes list
+              await (client.models as any).Recipe.delete({ id });
+              setRecipes(recipes.filter((recipe) => recipe.id !== id));
             } catch (error) {
               console.error('Error deleting recipe:', error);
               Alert.alert('Error', 'Failed to delete recipe. Please try again.');
@@ -228,7 +225,6 @@ const MyRecipesWithAmplify: React.FC = () => {
     }
   };
 
-
   useEffect(() => {
     if (!session?.user?.id) {
       setLoading(false);
@@ -243,8 +239,8 @@ const MyRecipesWithAmplify: React.FC = () => {
       try {
         console.log("Loading recipes for user:", userId);
         
-        // Check if Amplify models are available
-        if (!amplifyClient?.models || !(amplifyClient.models as any).Recipe) {
+        const client = getAmplifyClient();
+        if (!client?.models || !(client.models as any).Recipe) {
           console.log('⚠️ Amplify Recipe model not available');
           if (mounted) {
             setLoading(false);
@@ -252,7 +248,7 @@ const MyRecipesWithAmplify: React.FC = () => {
           return;
         }
         
-        const existingRecipesResult = await (amplifyClient.models as any).Recipe.list({
+        const existingRecipesResult = await (client.models as any).Recipe.list({
           filter: { userId: { eq: userId } }
         });
 
@@ -263,7 +259,7 @@ const MyRecipesWithAmplify: React.FC = () => {
 
         // Set up subscription only if component is still mounted
         if (mounted) {
-          subscription = (amplifyClient.models as any).Recipe.observeQuery({
+          subscription = (client.models as any).Recipe.observeQuery({
             filter: { userId: { eq: userId } }
           }).subscribe({
             next: ({ items }: { items: any[] }) => {
@@ -303,15 +299,15 @@ const MyRecipesWithAmplify: React.FC = () => {
   const seedRecipes = async (userId: string) => {
     console.log("Checking if recipes need to be seeded...");
     
-    // Check if Amplify models are available
-    if (!amplifyClient?.models || !(amplifyClient.models as any).Recipe) {
+    const client = getAmplifyClient();
+    if (!client?.models || !(client.models as any).Recipe) {
       console.log('⚠️ Amplify Recipe model not available, skipping seeding');
       return;
     }
     
     try {
       // Check if user already has recipes
-      const existingRecipesResult = await (amplifyClient.models as any).Recipe.list({
+      const existingRecipesResult = await (client.models as any).Recipe.list({
         filter: {
           userId: { eq: userId }
         }
@@ -322,7 +318,7 @@ const MyRecipesWithAmplify: React.FC = () => {
         
         // Seed dummy recipes
         for (const recipe of dummyRecipes) {
-          await (amplifyClient.models as any).Recipe.create({
+          await (client.models as any).Recipe.create({
             name: recipe.name,
             ingredients: JSON.stringify(recipe.ingredients),
             instructions: JSON.stringify(recipe.instructions),

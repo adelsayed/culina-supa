@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react'
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Linking } from 'react-native'
 import { useAuth } from '../lib/AuthContext'
 import { supabase } from '../lib/supabase'
+import { AuthError } from '@supabase/supabase-js'
 import * as WebBrowser from 'expo-web-browser'
 import { makeRedirectUri } from 'expo-auth-session'
 import * as QueryParams from 'expo-auth-session/build/QueryParams'
 import { Link } from 'expo-router'
+import { useRouter } from 'expo-router'
 
 WebBrowser.maybeCompleteAuthSession()
 
@@ -17,8 +19,8 @@ export default function AuthScreen() {
   const [googleLoading, setGoogleLoading] = useState(false)
   const [facebookLoading, setFacebookLoading] = useState(false)
   const [appleLoading, setAppleLoading] = useState(false)
-  const [forgotPasswordLoading, setForgotPasswordLoading] = useState(false)
   const { setSession } = useAuth()
+  const router = useRouter()
 
   const handleDeepLink = async (url: string) => {
     try {
@@ -69,7 +71,27 @@ export default function AuthScreen() {
       if (error) throw error
     } catch (error: any) {
       console.error('Error signing in:', error)
-      Alert.alert('Login Failed', 'Invalid email or password. Please check your credentials and try again. If you have forgotten your password, please use the \'Forgot Password?\' link.')
+
+      if (error instanceof AuthError) {
+        if (error.message === 'Email not confirmed') {
+          Alert.alert(
+            'Email Not Confirmed',
+            'Please check your inbox to confirm your email address before logging in.',
+          )
+        } else if (error.message === 'Invalid login credentials') {
+          Alert.alert(
+            'Login Failed',
+            "Invalid email or password. Please check your credentials and try again. If you've forgotten your password, use the 'Forgot Password?' link.",
+          )
+        } else {
+          Alert.alert('Login Failed', error.message)
+        }
+      } else {
+        Alert.alert(
+          'An Unexpected Error Occurred',
+          'Something went wrong. Please try again.',
+        )
+      }
     } finally {
       setEmailLoading(false)
     }
@@ -117,6 +139,7 @@ export default function AuthScreen() {
       Alert.alert('Error', error.message)
     } finally {
       setGithubLoading(false)
+      setAppleLoading(false)
     }
   }
 
@@ -162,6 +185,7 @@ export default function AuthScreen() {
       Alert.alert('Error', error.message)
     } finally {
       setGoogleLoading(false)
+      setAppleLoading(false)
     }
   }
 
@@ -208,6 +232,7 @@ export default function AuthScreen() {
       Alert.alert('Error', error.message)
     } finally {
       setFacebookLoading(false)
+      setAppleLoading(false)
     }
   }
 
@@ -257,24 +282,6 @@ export default function AuthScreen() {
     }
   }
 
-  const handleForgotPassword = async () => {
-    try {
-      setForgotPasswordLoading(true)
-      const redirectTo = makeRedirectUri({
-        scheme: 'com.supabase',
-        path: 'auth/callback',
-      })
-      const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo })
-      if (error) throw error
-      Alert.alert('Success', 'Check your email for instructions to reset your password')
-    } catch (error: any) {
-      console.error('Error resetting password:', error)
-      Alert.alert('Error', error.message)
-    } finally {
-      setForgotPasswordLoading(false)
-    }
-  }
-
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Welcome</Text>
@@ -297,7 +304,7 @@ export default function AuthScreen() {
       <TouchableOpacity
         style={styles.button}
         onPress={handleSignIn}
-        disabled={emailLoading || githubLoading || googleLoading || facebookLoading || forgotPasswordLoading || appleLoading}
+        disabled={emailLoading || githubLoading || googleLoading || facebookLoading || appleLoading}
       >
         <Text style={styles.buttonText}>
           {emailLoading ? 'Loading...' : 'Sign In'}
@@ -306,18 +313,16 @@ export default function AuthScreen() {
 
       <TouchableOpacity
         style={styles.forgotPasswordButton}
-        onPress={handleForgotPassword}
-        disabled={emailLoading || githubLoading || googleLoading || facebookLoading || forgotPasswordLoading || appleLoading}
+        onPress={() => router.push('/auth/reset-password')}
+        disabled={emailLoading || githubLoading || googleLoading || facebookLoading || appleLoading}
       >
-        <Text style={styles.forgotPasswordText}>
-          {forgotPasswordLoading ? 'Loading...' : 'Forgot Password?'}
-        </Text>
+        <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
       </TouchableOpacity>
 
       <TouchableOpacity
         style={[styles.button, styles.githubButton]}
         onPress={handleGithubSignIn}
-        disabled={emailLoading || githubLoading || googleLoading || facebookLoading || forgotPasswordLoading || appleLoading}
+        disabled={emailLoading || githubLoading || googleLoading || facebookLoading || appleLoading}
       >
         <Text style={styles.buttonText}>
           {githubLoading ? 'Loading...' : 'Sign in with GitHub'}
@@ -327,7 +332,7 @@ export default function AuthScreen() {
       <TouchableOpacity
         style={[styles.button, styles.googleButton]}
         onPress={handleGoogleSignIn}
-        disabled={emailLoading || githubLoading || googleLoading || facebookLoading || forgotPasswordLoading || appleLoading}
+        disabled={emailLoading || githubLoading || googleLoading || facebookLoading || appleLoading}
       >
         <Text style={styles.buttonText}>
           {googleLoading ? 'Loading...' : 'Sign in with Google'}
@@ -337,7 +342,7 @@ export default function AuthScreen() {
       <TouchableOpacity
         style={[styles.button, styles.facebookButton]}
         onPress={handleFacebookSignIn}
-        disabled={emailLoading || githubLoading || googleLoading || facebookLoading || forgotPasswordLoading || appleLoading}
+        disabled={emailLoading || githubLoading || googleLoading || facebookLoading || appleLoading}
       >
         <Text style={styles.buttonText}>
           {facebookLoading ? 'Loading...' : 'Sign in with Facebook'}
@@ -347,7 +352,7 @@ export default function AuthScreen() {
       <TouchableOpacity
         style={[styles.button, styles.appleButton]}
         onPress={handleAppleSignIn}
-        disabled={emailLoading || githubLoading || googleLoading || facebookLoading || forgotPasswordLoading || appleLoading}
+        disabled={emailLoading || githubLoading || googleLoading || facebookLoading || appleLoading}
       >
         <Text style={styles.buttonText}>
           {appleLoading ? 'Loading...' : 'Sign in with Apple'}

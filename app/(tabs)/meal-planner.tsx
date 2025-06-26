@@ -32,6 +32,15 @@ import { amplifyClient } from '../../lib/amplify';
 type Recipe = Schema['Recipe'];
 type MealType = 'breakfast' | 'snack1' | 'lunch' | 'snack2' | 'dinner';
 
+// Utility to normalize difficulty to schema format
+function normalizeDifficulty(difficulty?: string): 'Easy' | 'Medium' | 'Hard' {
+  if (!difficulty) return 'Medium';
+  const d = difficulty.toLowerCase();
+  if (d === 'easy') return 'Easy';
+  if (d === 'hard') return 'Hard';
+  return 'Medium';
+}
+
 const MealPlannerScreen: React.FC = () => {
   const { session } = useAuth();
   const { incrementStat } = useAchievements();
@@ -156,20 +165,31 @@ const MealPlannerScreen: React.FC = () => {
             fat: Math.round(dayPlan.totalFat / 3),
             prepTime: 20, // Default value
             cookTime: 20, // Default value
-            difficulty: 'medium' as const,
+            difficulty: normalizeDifficulty(meal.difficulty || 'medium'), // Always capitalized
             category: 'AI Generated',
             source: 'AI Generated', // Mark as AI-generated
             tags: ['ai-generated'], // Add a tag for filtering
           };
 
-          const createResult = await (amplifyClient.models as any).Recipe.create(newRecipeData);
-          
-          if (createResult.data) {
-            const savedRecipe = createResult.data;
-            // 2. Add the newly created recipe to the meal plan
-            const success = await addMealPlanEntry(dayDate, meal.type, savedRecipe, 1);
-            if (success) {
-              successCount++;
+          try {
+            console.log('Attempting to save meal planner recipe:', newRecipeData);
+            const createResult = await (amplifyClient.models as any).Recipe.create(newRecipeData);
+            console.log('Meal planner recipe save result:', createResult);
+            
+            if (createResult.data) {
+              const savedRecipe = createResult.data;
+              // 2. Add the newly created recipe to the meal plan
+              const success = await addMealPlanEntry(dayDate, meal.type, savedRecipe, 1);
+              if (success) {
+                successCount++;
+              }
+            }
+          } catch (error) {
+            console.error('Error saving recipe in meal planner:', error);
+            if (typeof window !== 'undefined' && window.alert) {
+              window.alert('Failed to save recipe: ' + (error && typeof error === 'object' && 'message' in error ? (error as any).message : error));
+            } else if (typeof Alert !== 'undefined') {
+              Alert.alert('Save Error', error && typeof error === 'object' && 'message' in error ? (error as any).message : 'Failed to save recipe');
             }
           }
         }

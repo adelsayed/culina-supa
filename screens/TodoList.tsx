@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, StyleSheet, TouchableOpacity, TextInput } from 'react-native';
-import { amplifyClient } from '../lib/amplify';
+import { getAmplifyClient } from '../lib/amplify';
 import type { Schema } from '../amplify/data/resource';
 import { useAuth } from '../lib/AuthContext';
 // import { subscriptionManager } from '../lib/subscriptionManager'; // temporarily disabled
@@ -14,36 +14,13 @@ const TodoList: React.FC = () => {
   const { session } = useAuth();
 
   useEffect(() => {
-    if (!session) {
-      setLoading(false);
-      return;
-    }
-
-    console.log("Setting up Todo subscription...");
-    let mounted = true;
-    
-    const subscription = amplifyClient.models.Todo.observeQuery().subscribe({
-      next: ({ items, isSynced }) => {
-        if (mounted) {
-          console.log("Received todos:", items);
-          setTodos(items);
-          setLoading(false);
-        }
-      },
-      error: (error) => {
-        console.error('Subscription error:', error);
-        if (mounted) {
-          setLoading(false);
-        }
-      }
+    const client = getAmplifyClient();
+    const subscription = client.models.Todo.observeQuery().subscribe({
+      next: (data) => setTodos([...data.items]),
     });
 
-    return () => {
-      mounted = false;
-      console.log("Cleaning up Todo subscription");
-      subscription.unsubscribe();
-    };
-  }, [session]);
+    return () => subscription.unsubscribe();
+  }, []);
 
   const addTodo = async () => {
     if (!newTodo.trim()) return;
@@ -53,7 +30,8 @@ const TodoList: React.FC = () => {
     try {
       console.log("Adding todo:", { content: newTodo, userId });
       
-      const result = await amplifyClient.models.Todo.create({
+      const client = getAmplifyClient();
+      const result = await client.models.Todo.create({
         content: newTodo,
         userId: userId,
       });
@@ -69,7 +47,8 @@ const TodoList: React.FC = () => {
     try {
       console.log("Deleting todo:", todo.id);
       
-      const result = await amplifyClient.models.Todo.delete({
+      const client = getAmplifyClient();
+      const result = await client.models.Todo.delete({
         id: todo.id,
       });
       

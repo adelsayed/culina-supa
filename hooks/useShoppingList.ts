@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { amplifyClient } from '../lib/amplify';
+import { getAmplifyClient } from '../lib/amplify';
 import type { Schema } from '../amplify/data/resource';
 import { useAuth } from '../lib/AuthContext';
 import { getWeekStartDate } from '../utils/dateUtils';
@@ -33,10 +33,9 @@ export const useShoppingList = (weekStartDate?: Date) => {
     setError(null);
 
     try {
-      // Check if ShoppingListItem model exists
-      if (!amplifyClient.models?.ShoppingListItem) {
-        console.error('ShoppingListItem model not found in Amplify client');
-        // Don't set error, just return empty list
+      const client = getAmplifyClient();
+      if (!client.models?.ShoppingListItem) {
+        console.warn('ShoppingListItem model not available');
         setShoppingList([]);
         setGroupedList({});
         setLoading(false);
@@ -45,7 +44,7 @@ export const useShoppingList = (weekStartDate?: Date) => {
 
       const weekStartDateStr = currentWeekStart.toISOString().split('T')[0];
 
-      const { data: items } = await amplifyClient.models.ShoppingListItem.list({
+      const { data: items } = await client.models.ShoppingListItem.list({
         filter: {
           userId: { eq: session.user.id },
           weekStartDate: { eq: weekStartDateStr }
@@ -102,7 +101,8 @@ export const useShoppingList = (weekStartDate?: Date) => {
     setError(null);
 
     try {
-      if (!amplifyClient.models?.ShoppingListItem) {
+      const client = getAmplifyClient();
+      if (!client.models?.ShoppingListItem) {
         setError('Shopping list model not available.');
         setLoading(false);
         return false;
@@ -110,7 +110,7 @@ export const useShoppingList = (weekStartDate?: Date) => {
 
       const weekStartDateStr = currentWeekStart.toISOString().split('T')[0];
 
-      const { data: newItem } = await amplifyClient.models.ShoppingListItem.create({
+      const { data: newItem } = await client.models.ShoppingListItem.create({
         userId: session.user.id,
         weekStartDate: weekStartDateStr,
         itemName,
@@ -148,12 +148,13 @@ export const useShoppingList = (weekStartDate?: Date) => {
     setError(null);
 
     try {
-      if (!amplifyClient.models?.ShoppingListItem) {
+      const client = getAmplifyClient();
+      if (!client.models?.ShoppingListItem) {
         setError('Shopping list model not available.');
         return false;
       }
 
-      const { data: updatedItem } = await amplifyClient.models.ShoppingListItem.update({
+      const { data: updatedItem } = await client.models.ShoppingListItem.update({
         id: itemId,
         ...updates
       });
@@ -190,12 +191,13 @@ export const useShoppingList = (weekStartDate?: Date) => {
     setError(null);
 
     try {
-      if (!amplifyClient.models?.ShoppingListItem) {
+      const client = getAmplifyClient();
+      if (!client.models?.ShoppingListItem) {
         setError('Shopping list model not available.');
         return false;
       }
 
-      await amplifyClient.models.ShoppingListItem.delete({ id: itemId });
+      await client.models.ShoppingListItem.delete({ id: itemId });
       
       const updatedList = shoppingList.filter(item => item.id !== itemId);
       setShoppingList(updatedList);
@@ -222,7 +224,7 @@ export const useShoppingList = (weekStartDate?: Date) => {
     try {
       // Delete all completed items
       const deletePromises = completedItems.map(item =>
-        amplifyClient.models.ShoppingListItem.delete({ id: item.id })
+        getAmplifyClient().models.ShoppingListItem.delete({ id: item.id })
       );
       
       await Promise.all(deletePromises);
@@ -247,14 +249,15 @@ export const useShoppingList = (weekStartDate?: Date) => {
     setError(null);
 
     try {
-      if (!amplifyClient.models?.ShoppingListItem) {
+      const client = getAmplifyClient();
+      if (!client.models?.ShoppingListItem) {
         setError('Shopping list model not available.');
         return false;
       }
 
       // Delete all items
       const deletePromises = shoppingList.map(item =>
-        amplifyClient.models.ShoppingListItem.delete({ id: item.id })
+        client.models.ShoppingListItem.delete({ id: item.id })
       );
       
       await Promise.all(deletePromises);
@@ -281,7 +284,7 @@ export const useShoppingList = (weekStartDate?: Date) => {
     recipeId?: string;
     mealPlanEntryId?: string;
   }>) => {
-    if (!session?.user?.id || !amplifyClient.models?.ShoppingListItem) return false;
+    if (!session?.user?.id || !getAmplifyClient().models?.ShoppingListItem) return false;
 
     setLoading(true);
     setError(null);
@@ -291,7 +294,7 @@ export const useShoppingList = (weekStartDate?: Date) => {
 
       // Create all items in parallel
       const createPromises = items.map(item =>
-        amplifyClient.models.ShoppingListItem.create({
+        getAmplifyClient().models.ShoppingListItem.create({
           userId: session.user.id,
           weekStartDate: weekStartDateStr,
           itemName: item.itemName,

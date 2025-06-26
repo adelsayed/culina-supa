@@ -1,10 +1,10 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Modal, SafeAreaView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Modal, SafeAreaView, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useUserProfile } from '../hooks/useUserProfile';
 import { useAuth } from '../lib/AuthContext';
-import { amplifyClient } from '../lib/amplify';
+import { getAmplifyClient } from '../lib/amplify';
 import { 
   generateEnhancedRecipePrompt,
   generateQuickMealPrompt,
@@ -108,6 +108,15 @@ const recipeOptions: RecipeOption[] = [
     category: 'Health'
   }
 ];
+
+// Utility to normalize difficulty to schema format
+function normalizeDifficulty(difficulty?: string): 'Easy' | 'Medium' | 'Hard' {
+  if (!difficulty) return 'Medium';
+  const d = difficulty.toLowerCase();
+  if (d === 'easy') return 'Easy';
+  if (d === 'hard') return 'Hard';
+  return 'Medium';
+}
 
 export default function EnhancedAIRecipes() {
   const { profile } = useUserProfile();
@@ -322,7 +331,7 @@ export default function EnhancedAIRecipes() {
       prepTime: recipe.prepTime || 15,
       cookTime: recipe.cookTime || 20,
       totalTime: recipe.totalTime || (recipe.prepTime || 15) + (recipe.cookTime || 20),
-      difficulty: recipe.difficulty || 'Medium',
+      difficulty: normalizeDifficulty(String(recipe.difficulty)),
       calories: recipe.calories || 400,
       protein: recipe.protein || 20,
       carbs: recipe.carbs || 40,
@@ -371,7 +380,7 @@ export default function EnhancedAIRecipes() {
         servings: recipe.servings,
         prepTime: recipe.prepTime,
         cookTime: recipe.cookTime,
-        difficulty: recipe.difficulty.toLowerCase() as 'easy' | 'medium' | 'hard',
+        difficulty: normalizeDifficulty(String(recipe.difficulty)),
         category: recipe.cuisine,
         calories: recipe.calories,
         protein: recipe.protein,
@@ -379,9 +388,12 @@ export default function EnhancedAIRecipes() {
         fat: recipe.fat,
         userId: session.user.id,
         imageUrl: `https://source.unsplash.com/400x300/?${encodeURIComponent(recipe.name)},food`
-      };
+      } as const;
 
-      await amplifyClient.models.Recipe.create(recipeData);
+      console.log('Attempting to save recipe:', recipeData);
+      const client = getAmplifyClient();
+      await client.models.Recipe.create(recipeData);
+      console.log('Recipe save succeeded');
       
       // Track achievements
       await incrementStat('recipes_created');
@@ -393,7 +405,12 @@ export default function EnhancedAIRecipes() {
       
     } catch (err) {
       console.error('Error saving recipe:', err);
-      setError('Failed to save recipe');
+      setError(err && typeof err === 'object' && 'message' in err ? (err as any).message : 'Failed to save recipe');
+      if (typeof window !== 'undefined' && window.alert) {
+        window.alert('Failed to save recipe: ' + (err && typeof err === 'object' && 'message' in err ? (err as any).message : err));
+      } else if (typeof Alert !== 'undefined') {
+        Alert.alert('Save Error', err && typeof err === 'object' && 'message' in err ? (err as any).message : 'Failed to save recipe');
+      }
     }
   };
 

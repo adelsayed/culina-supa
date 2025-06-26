@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../lib/AuthContext';
-import { amplifyClient } from '../lib/amplify';
+import { getAmplifyClient } from '../lib/amplify';
 import { useMealPlanner } from './useMealPlanner';
 import { useUserProfile } from './useUserProfile';
 import { getWeekStartDate } from '../utils/dateUtils';
@@ -97,35 +97,28 @@ export function useDashboardData(): DashboardData {
   };
 
   // Load additional dashboard data
-  const loadDashboardData = useCallback(async () => {
-    if (!session?.user?.id) {
-      setLoading(false);
-      return;
-    }
-
-    try {
-      // Load recipes count
-      const { data: recipes } = await amplifyClient.models.Recipe.list({
-        filter: { userId: { eq: session.user.id } }
-      });
-      setRecipesCount(recipes?.length || 0);
-
-      // Calculate streak (simplified - would need more complex logic in real app)
-      // For now, just set a mock streak
-      setStreak(5);
-
-      setError(null);
-    } catch (err) {
-      console.error('Error loading dashboard data:', err);
-      setError('Failed to load dashboard data');
-    } finally {
-      setLoading(false);
-    }
-  }, [session?.user?.id]);
-
   useEffect(() => {
-    loadDashboardData();
-  }, [loadDashboardData]);
+    const fetchData = async () => {
+      if (!session?.user?.id) return;
+      setLoading(true);
+      try {
+        const client = getAmplifyClient();
+        const { data: recipes } = await client.models.Recipe.list({
+          filter: { userId: { eq: session.user.id } }
+        });
+        setRecipesCount(recipes?.length || 0);
+
+        // Additional stats can be fetched here
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+        setError('Could not load dashboard data.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [session]);
 
   return {
     todaysMeals,
