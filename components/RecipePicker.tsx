@@ -125,14 +125,14 @@ const RecipePicker: React.FC<RecipePickerProps> = ({
           
           <View style={styles.recipeStats}>
             {item.calories && (
-              <Text style={styles.recipeStat}>{Math.round(item.calories)} cal</Text>
+              <Text style={styles.recipeStat}>{String(Math.round(item.calories))} cal</Text>
             )}
             {item.prepTime && (
-              <Text style={styles.recipeStat}>{item.prepTime}min prep</Text>
+              <Text style={styles.recipeStat}>{String(item.prepTime)}min prep</Text>
             )}
             {item.difficulty && (
               <Text style={[styles.recipeStat, styles.difficulty]}>
-                {item.difficulty}
+                {String(item.difficulty)}
               </Text>
             )}
           </View>

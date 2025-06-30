@@ -124,15 +124,16 @@ Generate 3 complete recipes with SPECIFIC, CREATIVE NAMES and detailed ingredien
     await incrementStat('ai_suggestions_used');
     
     // Transform AI recipe format to app recipe format
+    // Ensure all values are strings for URL parameters
     const recipeData = {
-      title: recipe.name,
-      description: recipe.description,
-      category: recipe.cuisine,
-      cookTime: recipe.cookTime,
-      difficulty: recipe.difficulty.toLowerCase(),
-      ingredients: recipe.ingredients.join('\n'),
-      instructions: recipe.instructions.join('\n'),
-      nutritionalInfo: `Calories: ${recipe.calories}`,
+      title: String(recipe.name || ''),
+      description: String(recipe.description || ''),
+      category: String(recipe.cuisine || ''),
+      cookTime: String(recipe.cookTime || ''),
+      difficulty: String(recipe.difficulty || '').toLowerCase(),
+      ingredients: recipe.ingredients ? recipe.ingredients.join('\n') : '',
+      instructions: recipe.instructions ? recipe.instructions.join('\n') : '',
+      nutritionalInfo: `Calories: ${String(recipe.calories || 0)}`,
       servings: '4', // Default serving size
     };
 
@@ -570,27 +571,27 @@ Generate 3 complete recipes with SPECIFIC, CREATIVE NAMES and detailed ingredien
             <View style={styles.recipeContent}>
               <View style={styles.recipeTopContent}>
                 <View style={styles.recipeBadge}>
-                  <Text style={styles.recipeBadgeText}>{recipe.cuisine}</Text>
+                  <Text style={styles.recipeBadgeText}>{String(recipe.cuisine || '')}</Text>
                 </View>
-                <Text style={styles.recipeName}>{recipe.name}</Text>
+                <Text style={styles.recipeName}>{String(recipe.name || '')}</Text>
                 <Text style={styles.recipeDescription} numberOfLines={2}>
-                  {recipe.description}
+                  {String(recipe.description || '')}
                 </Text>
                 
                 <View style={styles.recipeMetrics}>
                   <View style={styles.metricItem}>
                     <Ionicons name="flame" size={12} color="#EF4444" />
-                    <Text style={styles.metricValue}>{recipe.calories}</Text>
+                    <Text style={styles.metricValue}>{String(recipe.calories || 0)}</Text>
                     <Text style={styles.metricLabel}>CAL</Text>
                   </View>
                   <View style={styles.metricItem}>
                     <Ionicons name="time" size={12} color="#3B82F6" />
-                    <Text style={styles.metricValue}>{recipe.cookTime}</Text>
+                    <Text style={styles.metricValue}>{String(recipe.cookTime || '')}</Text>
                     <Text style={styles.metricLabel}>TIME</Text>
                   </View>
                   <View style={styles.metricItem}>
                     <Ionicons name="bar-chart" size={12} color="#10B981" />
-                    <Text style={styles.metricValue}>{recipe.difficulty}</Text>
+                    <Text style={styles.metricValue}>{String(recipe.difficulty || '')}</Text>
                     <Text style={styles.metricLabel}>LEVEL</Text>
                   </View>
                 </View>

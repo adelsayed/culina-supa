@@ -106,14 +106,14 @@ export default function SmartShoppingList({ weekStartDate }: SmartShoppingListPr
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.insightsScroll}>
           <View style={styles.insightCard}>
             <Ionicons name="basket" size={20} color={Colors.primary} />
-            <Text style={styles.insightValue}>{insights.pending}</Text>
+            <Text style={styles.insightValue}>{String(insights.pending)}</Text>
             <Text style={styles.insightLabel}>Items Left</Text>
           </View>
           
           {insights.pantryAvailable > 0 && (
             <View style={[styles.insightCard, styles.warningCard]}>
               <Ionicons name="home" size={20} color={Colors.warning} />
-              <Text style={styles.insightValue}>{insights.pantryAvailable}</Text>
+              <Text style={styles.insightValue}>{String(insights.pantryAvailable)}</Text>
               <Text style={styles.insightLabel}>In Pantry</Text>
             </View>
           )}
@@ -121,7 +121,7 @@ export default function SmartShoppingList({ weekStartDate }: SmartShoppingListPr
           {insights.duplicates > 0 && (
             <View style={[styles.insightCard, styles.errorCard]}>
               <Ionicons name="copy" size={20} color={Colors.error} />
-              <Text style={styles.insightValue}>{insights.duplicates}</Text>
+              <Text style={styles.insightValue}>{String(insights.duplicates)}</Text>
               <Text style={styles.insightLabel}>Duplicates</Text>
             </View>
           )}

@@ -15,22 +15,61 @@ import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import ModalSelector from 'react-native-modal-selector';
 
-import { amplifyClient, getGuestCredentials } from '../../lib/amplify';
+import { getAmplifyClient } from '../../lib/amplify';
 import { useAuth } from '../../lib/AuthContext';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { uploadData } from 'aws-amplify/storage';
 
+// Define the ingredient type
+interface Ingredient {
+  name: string;
+  quantity: string;
+  unit: string;
+}
+
 export default function AddRecipeScreen() {
-  const params = useLocalSearchParams();
+  const router = useRouter();
+  const { session } = useAuth();
   
-  const [title, setTitle] = useState(params.title as string || '');
-  const [description, setDescription] = useState(params.description as string || '');
+  // Get search params with error handling
+  let searchParams: any = {};
+  try {
+    const rawParams = useLocalSearchParams();
+    // Sanitize all parameters to ensure they are strings
+    searchParams = Object.keys(rawParams).reduce((acc, key) => {
+      const value = rawParams[key];
+      if (typeof value === 'string') {
+        acc[key] = value;
+      } else if (Array.isArray(value)) {
+        acc[key] = value[0] || '';
+      } else if (value !== null && value !== undefined) {
+        acc[key] = String(value);
+      } else {
+        acc[key] = '';
+      }
+      return acc;
+    }, {} as Record<string, string>);
+  } catch (error) {
+    console.warn('Error getting search params:', error);
+    searchParams = {};
+  }
+  
+  // Helper function to safely extract string from params
+  const getStringParam = (param: string | string[] | undefined): string => {
+    if (typeof param === 'string') return param;
+    if (Array.isArray(param) && param.length > 0) return param[0];
+    return '';
+  };
+
+  // State initialization with safe parameter handling
+  const [title, setTitle] = useState(getStringParam(searchParams.title));
+  const [description, setDescription] = useState(getStringParam(searchParams.description));
   const [image, setImage] = useState<string | null>(null);
   const [video, setVideo] = useState<string | null>(null);
-  const [ingredients, setIngredients] = useState(() => {
-    if (params.ingredients) {
-      // Convert AI recipe ingredients format to app format
-      return (params.ingredients as string).split('\n').map(ingredient => ({
+  const [ingredients, setIngredients] = useState<Ingredient[]>(() => {
+    const ingredientsStr = getStringParam(searchParams.ingredients);
+    if (ingredientsStr && ingredientsStr.trim()) {
+      return ingredientsStr.split('\n').map((ingredient: string) => ({
         name: ingredient.trim(),
         quantity: '',
         unit: ''
@@ -38,14 +77,14 @@ export default function AddRecipeScreen() {
     }
     return [{ name: '', quantity: '', unit: '' }];
   });
-  const [instructions, setInstructions] = useState(() => {
-    if (params.instructions) {
-      // Convert AI recipe instructions format to app format
-      return (params.instructions as string).split('\n').map(instruction => instruction.trim());
+  const [instructions, setInstructions] = useState<string[]>(() => {
+    const instructionsStr = getStringParam(searchParams.instructions);
+    if (instructionsStr && instructionsStr.trim()) {
+      return instructionsStr.split('\n').map((instruction: string) => instruction.trim());
     }
     return [''];
   });
-  const [category, setCategory] = useState(params.category as string || '');
+  const [category, setCategory] = useState(getStringParam(searchParams.category));
   const [tags, setTags] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -55,9 +94,6 @@ export default function AddRecipeScreen() {
   const categoryOptions = [
     '', 'Breakfast', 'Lunch', 'Dinner', 'Snack', 'Dessert', 'Beverage', 'Other'
   ];
-
-  const { session } = useAuth();
-  const router = useRouter();
 
   // Image picker with upload
   const pickImage = async () => {
@@ -74,8 +110,6 @@ export default function AddRecipeScreen() {
   // Upload image to S3
   const uploadImageToS3 = async (imageUri: string, userId: string, recipeId: string): Promise<string | null> => {
     try {
-      // Ensure we have guest credentials
-      await getGuestCredentials();
       
       const response = await fetch(imageUri);
       const blob = await response.blob();
@@ -113,21 +147,21 @@ export default function AddRecipeScreen() {
 
   // Ingredient handlers
   const updateIngredient = (idx: number, key: string, value: string) => {
-    const updated = ingredients.map((ing, i) =>
+    const updated = ingredients.map((ing: Ingredient, i: number) =>
       i === idx ? { ...ing, [key]: value } : ing
     );
     setIngredients(updated);
   };
   const addIngredient = () => setIngredients([...ingredients, { name: '', quantity: '', unit: '' }]);
-  const removeIngredient = (idx: number) => setIngredients(ingredients.filter((_, i) => i !== idx));
+  const removeIngredient = (idx: number) => setIngredients(ingredients.filter((_: Ingredient, i: number) => i !== idx));
 
   // Instruction handlers
   const updateInstruction = (idx: number, value: string) => {
-    const updated = instructions.map((step, i) => (i === idx ? value : step));
+    const updated = instructions.map((step: string, i: number) => (i === idx ? value : step));
     setInstructions(updated);
   };
   const addInstruction = () => setInstructions([...instructions, '']);
-  const removeInstruction = (idx: number) => setInstructions(instructions.filter((_, i) => i !== idx));
+  const removeInstruction = (idx: number) => setInstructions(instructions.filter((_: string, i: number) => i !== idx));
 
   // Submit handler with image upload
   const handleSubmit = async () => {
@@ -142,15 +176,27 @@ export default function AddRecipeScreen() {
     setLoading(true);
     try {
       // First create the recipe to get an ID
+      const amplifyClient = getAmplifyClient();
+      
+      // Format ingredients as strings for display in recipe list
+      const formattedIngredients = ingredients.map((ing: Ingredient) => {
+        const parts = [
+          ing.quantity?.trim(),
+          ing.unit?.trim(),
+          ing.name?.trim()
+        ].filter(Boolean);
+        return parts.join(' ');
+      });
+      
       const recipe = await (amplifyClient.models as any).Recipe.create({
         name: title.trim(),
         imageUrl: '', // Will update after image upload
-        ingredients: JSON.stringify(ingredients),
+        ingredients: JSON.stringify(formattedIngredients),
         instructions: JSON.stringify(instructions),
         category: category.trim(),
         tags: tags
           .split(',')
-          .map(t => {
+          .map((t: string) => {
             const tag = t.trim();
             return tag.length > 0 ? tag : null;
           }),
@@ -230,25 +276,25 @@ export default function AddRecipeScreen() {
 
       {/* Ingredients */}
       <Text style={styles.section}>Ingredients</Text>
-      {ingredients.map((ing, idx) => (
+      {ingredients.map((ing: Ingredient, idx: number) => (
         <View key={idx} style={styles.ingredientRow}>
           <TextInput
             style={[styles.input, { flex: 2 }]}
             placeholder="Ingredient *"
-            value={ing.name}
+            value={String(ing.name || '')}
             onChangeText={text => updateIngredient(idx, 'name', text)}
           />
           <TextInput
             style={[styles.input, { flex: 1, marginLeft: 6 }]}
             placeholder="Qty"
-            value={ing.quantity}
+            value={String(ing.quantity || '')}
             onChangeText={text => updateIngredient(idx, 'quantity', text)}
           />
           <View style={[styles.input, { flex: 1, marginLeft: 6, paddingHorizontal: 0, paddingVertical: 0, justifyContent: 'center' }]}>
             <ModalSelector
               data={unitOptions.map(option => ({
                 key: option,
-                label: <Text>{option ? option : 'Unit'}</Text>,
+                label: String(option || 'Unit'),
                 value: option
               }))}
               initValue="Unit"
@@ -260,7 +306,7 @@ export default function AddRecipeScreen() {
               cancelText="Cancel"
             >
               <Text style={{ fontSize: 14, color: ing.unit ? '#333' : '#888' }}>
-                {ing.unit || 'Unit'}
+                {String(ing.unit || 'Unit')}
               </Text>
             </ModalSelector>
           </View>
@@ -276,12 +322,12 @@ export default function AddRecipeScreen() {
 
       {/* Instructions */}
       <Text style={styles.section}>Instructions</Text>
-      {instructions.map((step, idx) => (
+      {instructions.map((step: string, idx: number) => (
         <View key={idx} style={styles.ingredientRow}>
           <TextInput
             style={[styles.input, { flex: 1 }]}
             placeholder={`Step ${idx + 1} *`}
-            value={step}
+            value={String(step || '')}
             onChangeText={text => updateInstruction(idx, text)}
             multiline
           />
@@ -301,7 +347,7 @@ export default function AddRecipeScreen() {
         <ModalSelector
           data={categoryOptions.map(option => ({
             key: option,
-            label: <Text>{option ? option : 'Select Category'}</Text>,
+            label: String(option || 'Select Category'),
             value: option
           }))}
           initValue="Select Category"
@@ -313,7 +359,7 @@ export default function AddRecipeScreen() {
           cancelText="Cancel"
         >
           <Text style={{ fontSize: 14, color: category ? '#333' : '#888' }}>
-            {category || 'Select Category'}
+            {String(category || 'Select Category')}
           </Text>
         </ModalSelector>
       </View>

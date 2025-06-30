@@ -199,19 +199,19 @@ export default function RecentlyViewed() {
                 {recipe.calories && (
                   <View style={styles.metric}>
                     <Ionicons name="flame" size={12} color={Colors.warning} />
-                    <Text style={styles.metricText}>{recipe.calories}</Text>
+                    <Text style={styles.metricText}>{String(recipe.calories)}</Text>
                   </View>
                 )}
                 {recipe.cookTime && (
                   <View style={styles.metric}>
                     <Ionicons name="time" size={12} color={Colors.primary} />
-                    <Text style={styles.metricText}>{recipe.cookTime}m</Text>
+                    <Text style={styles.metricText}>{String(recipe.cookTime)}m</Text>
                   </View>
                 )}
                 {recipe.difficulty && (
                   <View style={styles.metric}>
                     <Ionicons name="bar-chart" size={12} color={Colors.secondary} />
-                    <Text style={styles.metricText}>{recipe.difficulty}</Text>
+                    <Text style={styles.metricText}>{String(recipe.difficulty)}</Text>
                   </View>
                 )}
               </View>

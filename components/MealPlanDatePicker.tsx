@@ -218,7 +218,7 @@ const MealPlanDatePicker: React.FC<MealPlanDatePickerProps> = ({
                 <Ionicons name="remove" size={20} color="#007AFF" />
               </TouchableOpacity>
               
-              <Text style={styles.servingsValue}>{servings}</Text>
+              <Text style={styles.servingsValue}>{String(servings)}</Text>
               
               <TouchableOpacity
                 onPress={() => setServings(servings + 0.5)}
@@ -230,7 +230,7 @@ const MealPlanDatePicker: React.FC<MealPlanDatePickerProps> = ({
             
             {recipe.calories && (
               <Text style={styles.caloriesText}>
-                {Math.round(recipe.calories * servings)} calories
+                {String(Math.round(recipe.calories * servings))} calories
               </Text>
             )}
           </View>

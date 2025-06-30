@@ -10,7 +10,7 @@ import {
   Alert,
 } from 'react-native';
 import { useLocalSearchParams, Stack, useRouter } from 'expo-router';
-import { amplifyClient, isAmplifyReady } from '../../lib/amplify';
+import { getAmplifyClient } from '../../lib/amplify';
 import type { Schema } from '../../amplify/data/resource';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -29,7 +29,7 @@ export default function RecipeDetails() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { session, loading: authLoading, isInitialized } = useAuth();
-  const [recipe, setRecipe] = useState<Recipe | null>(null);
+  const [recipe, setRecipe] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -58,14 +58,10 @@ export default function RecipeDetails() {
         return;
       }
 
-      // Check if Amplify is ready
-      if (!isAmplifyReady()) {
-        setError('Service not available');
-        setLoading(false);
-        return;
-      }
-
       try {
+        // Get Amplify client
+        const amplifyClient = getAmplifyClient();
+        
         // Check if Amplify models are available
         if (!amplifyClient?.models || !(amplifyClient.models as any).Recipe) {
           console.log('⚠️ Amplify Recipe model not available');

@@ -225,7 +225,7 @@ export default function SimpleNutritionAnalysis({
         {/* Recipe Info */}
         <View style={styles.recipeInfo}>
           <Text style={styles.recipeName}>{recipeName}</Text>
-          <Text style={styles.servingInfo}>Per serving ({servings} total servings)</Text>
+          <Text style={styles.servingInfo}>Per serving ({String(servings)} total servings)</Text>
         </View>
 
         {/* Tab Navigation */}
@@ -254,19 +254,19 @@ export default function SimpleNutritionAnalysis({
               {/* Quick Stats */}
               <View style={styles.quickStats}>
                 <View style={styles.quickStat}>
-                  <Text style={styles.quickStatValue}>{displayNutrition.calories}</Text>
+                  <Text style={styles.quickStatValue}>{String(displayNutrition.calories)}</Text>
                   <Text style={styles.quickStatLabel}>Calories</Text>
                 </View>
                 <View style={styles.quickStat}>
-                  <Text style={styles.quickStatValue}>{displayNutrition.protein?.toFixed(1)}g</Text>
+                  <Text style={styles.quickStatValue}>{String(displayNutrition.protein?.toFixed(1))}g</Text>
                   <Text style={styles.quickStatLabel}>Protein</Text>
                 </View>
                 <View style={styles.quickStat}>
-                  <Text style={styles.quickStatValue}>{displayNutrition.carbs?.toFixed(1)}g</Text>
+                  <Text style={styles.quickStatValue}>{String(displayNutrition.carbs?.toFixed(1))}g</Text>
                   <Text style={styles.quickStatLabel}>Carbs</Text>
                 </View>
                 <View style={styles.quickStat}>
-                  <Text style={styles.quickStatValue}>{displayNutrition.fat?.toFixed(1)}g</Text>
+                  <Text style={styles.quickStatValue}>{String(displayNutrition.fat?.toFixed(1))}g</Text>
                   <Text style={styles.quickStatLabel}>Fat</Text>
                 </View>
               </View>

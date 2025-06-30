@@ -1,5 +1,30 @@
 # Culina App Changelog
 
+## [2025-06-30] Add Recipe & Recipe Display Fixes
+
+### 🐛 **Critical Bug Fixes**
+- **"Text strings must be rendered within a <Text> component" Error Fixed**: Resolved persistent React Native error in Add Recipe screen by implementing comprehensive parameter sanitization for `useLocalSearchParams()` values
+- **Recipe List "[object Object]" Display Fixed**: Fixed recipe list showing ingredients as "[object Object]" by updating ingredient parsing logic to handle both object format (`{name, quantity, unit}`) and string format data
+- **Recipe Detail Screen Loading Fixed**: Resolved recipe detail screen failing to load by updating Amplify client imports from deprecated `amplifyClient` to `getAmplifyClient()` function
+- **Babel Configuration Updated**: Fixed deprecated `expo-router/babel` plugin warning by updating `babel.config.js` for Expo SDK 50 compatibility
+
+### 🔧 **Technical Improvements**
+- **Enhanced Parameter Handling**: Added robust parameter sanitization in Add Recipe screen that safely handles strings, arrays, objects, and undefined values from URL parameters
+- **Backward Compatible Ingredient Parsing**: Recipe list now properly displays ingredients regardless of whether they were saved in old object format or new string format
+- **Improved Data Storage**: New recipes save ingredients as formatted strings (`"2 cups rice"`) instead of objects for better display compatibility
+- **Type Safety**: Updated component types to use `any` to resolve complex Amplify type inference issues while maintaining functionality
+
+### 🎯 **User Experience Improvements**
+- **Seamless AI Recipe Integration**: AI-generated recipes now properly populate the Add Recipe form without text rendering errors
+- **Readable Recipe Lists**: Ingredients display as "2 cups rice, 1 lb chicken" instead of "[object Object]" for all recipes
+- **Reliable Recipe Details**: Recipe detail screen consistently loads and displays recipe information
+- **Consistent Data Format**: Both new and existing recipes display correctly regardless of storage format
+
+### 🛡️ **Error Handling**
+- **URL Parameter Safety**: Added try-catch wrapper for `useLocalSearchParams()` with fallback to empty object
+- **Data Type Conversion**: All parameter values are explicitly converted to strings before processing
+- **Graceful Degradation**: Components handle missing or malformed data without crashing
+
 ## [2025-06-22] Meal Plan Entry Creation Fix
 
 ### 🐛 **Critical Bug Fixes**
@@ -240,7 +265,29 @@
 - **Password Reset Flow**: Fixed an issue where users clicking the password reset link from their email were redirected to the recipes list instead of the reset password screen. The app now correctly detects the Supabase recovery session and shows the set new password form.
 - **Session Recovery Detection**: Improved logic in both `_layout.tsx` and `ResetPasswordScreen.tsx` to reliably detect when a user is in a password recovery state, even if the recovery tokens are not present in the URL.
 - **User Experience**: Users are now taken directly to the new password form after clicking the reset link, without being asked for their email again.
+- **Login Redirect**: Fixed authentication redirect to send users to the home screen instead of the recipes list after successful login.
+- **AI Recipe Text Rendering**: Fixed "Text strings must be rendered within a <Text> component" error when adding recipes from AI suggestions by ensuring all data types are properly converted to strings.
+- **AI Recipe Save Functionality**: Enhanced error handling and data validation for saving AI-generated recipes, including better error messages and logging.
+- **Recipe Card Rendering Fix**: Fixed missing String() conversion for recipe servings in AI recipe cards that was causing text rendering errors.
+- **GeminiRecommendedRecipes Text Fix**: Fixed multiple text rendering issues in the main AI recipe recommendations component where recipe properties (cuisine, name, description, calories, cookTime, difficulty) were not properly converted to strings.
+- **React setState Error Fix**: Fixed "Cannot update a component while rendering a different component" error by temporarily removing the DebugLogger to prevent state updates during render cycle.
+- **DebugLogger Syntax Fix**: Fixed syntax errors in DebugLogger.tsx that were causing compilation failures, restored to a clean working state.
+- **DebugLogger Import Error Fix**: Fixed undefined component error in HomeScreen caused by missing DebugToggle export, restored DebugLogger.tsx file that had become empty.
+- **Comprehensive Text Rendering Fix**: Fixed all remaining "Text strings must be rendered within a <Text> component" errors across multiple components by wrapping numeric and dynamic values in String() conversion:
+  - RecipePicker.tsx: Fixed calories, prep time, and difficulty display
+  - SmartShoppingList.tsx: Fixed pending items, pantry available, and duplicates count display
+  - ProfileScreen.tsx: Fixed BMI, daily calories, age, and macro targets display
+  - RecentlyViewed.tsx: Fixed recipe metrics (calories, cook time, difficulty) display
+  - TodaysMealPlan.tsx: Fixed meal name and calories display
+  - MealPlanDatePicker.tsx: Fixed servings and calculated calories display
+  - SimpleNutritionAnalysis.tsx: Fixed all nutrition values and servings display
+  - AIRecommendedRecipesFixed.tsx: Fixed cuisine, calories, cook time, and difficulty display
+  - AIRecommendedRecipesUpdated.tsx: Fixed cuisine, calories, cook time, and difficulty display
+  - AIRecommendedRecipes.tsx: Fixed cuisine, calories, cook time, and difficulty display
+- **ModalSelector Label Fix**: Fixed JSX components being passed as labels in ModalSelector components by converting them to strings in the Add Recipe screen for both unit and category selectors.
+- **Add Recipe ModalSelector Fix**: Fixed remaining text rendering issues in ModalSelector components for unit and category selection where option values were not properly converted to strings.
 
 ### 🔧 **Technical Improvements**
 - **Navigation Logic**: Refactored navigation in `_layout.tsx` to prioritize password recovery state and avoid false redirects.
 - **Recovery Session Handling**: Enhanced `ResetPasswordScreen.tsx` to check for an active recovery session on mount, ensuring the correct UI is shown regardless of how the user arrives at the screen.
+- **Auth Context**: Updated `AuthContext.tsx` to redirect to home screen after successful authentication.

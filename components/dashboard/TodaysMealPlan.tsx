@@ -57,9 +57,9 @@ const MealCard: React.FC<{
           </View>
         ) : (
           <View style={styles.plannedMealContent}>
-            <Text style={styles.mealName} numberOfLines={2}>{meal.name}</Text>
+            <Text style={styles.mealName} numberOfLines={2}>{String(meal.name)}</Text>
             {meal.calories && (
-              <Text style={styles.mealCalories}>{meal.calories} cal</Text>
+              <Text style={styles.mealCalories}>{String(meal.calories)} cal</Text>
             )}
           </View>
         )}

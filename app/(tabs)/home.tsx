@@ -12,6 +12,7 @@ import QuickStats from '../../components/dashboard/QuickStats';
 import AchievementBadges from '../../components/dashboard/AchievementBadges';
 import SmartSuggestions from '../../components/dashboard/SmartSuggestions';
 import RecentlyViewed from '../../components/dashboard/RecentlyViewed';
+import { DebugToggle } from '../../components/DebugLogger';
 import {
   MealPlanSkeleton,
   StatsSkeleton,
@@ -128,6 +129,7 @@ export default function HomeScreen() {
 
         <GeminiRecommendedRecipes />
       </ScrollView>
+      <DebugToggle />
     </SafeAreaView>
   );
 }

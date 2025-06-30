@@ -15,6 +15,7 @@ import {
 } from '../utils/enhancedAIPrompts';
 import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../constants/DesignSystem';
 import { useAchievements } from '../hooks/useAchievements';
+import log from '../utils/logger';
 
 interface EnhancedRecipe {
   name: string;
@@ -188,7 +189,7 @@ export default function EnhancedAIRecipes() {
         })
       });
 
-      console.log('API response status:', response.status);
+      log.info('API response status:', response.status);
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -208,7 +209,7 @@ export default function EnhancedAIRecipes() {
       const data = await response.json();
       const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
 
-      console.log('API response data:', data);
+      log.info('API response data:', data);
 
       if (!content) {
         if (data.candidates?.[0]?.finishReason === 'SAFETY') {
@@ -226,8 +227,8 @@ export default function EnhancedAIRecipes() {
         .replace(/^Here are.*?:\s*/i, '')
         .trim();
 
-      console.log('Raw AI response:', content);
-      console.log('Cleaned content:', cleanedContent);
+      log.info('Raw AI response:', content);
+      log.info('Cleaned content:', cleanedContent);
 
       let recipes: EnhancedRecipe[];
       
@@ -315,7 +316,7 @@ export default function EnhancedAIRecipes() {
 
   const validateAndEnhanceRecipe = (recipe: any): EnhancedRecipe => {
     // Log the raw recipe for debugging
-    console.log('Validating recipe:', recipe);
+    log.debug('Validating recipe:', recipe);
     
     // Check if recipe name exists and is not empty
     if (!recipe.name || recipe.name.trim() === '') {
@@ -336,19 +337,25 @@ export default function EnhancedAIRecipes() {
       protein: recipe.protein || 20,
       carbs: recipe.carbs || 40,
       fat: recipe.fat || 15,
-      ingredients: recipe.ingredients?.map((ing: any, index: number) => ({
-        name: ing.name && ing.name.trim() ? ing.name.trim() : `Ingredient ${index + 1}`,
-        quantity: ing.quantity || 1,
-        unit: ing.unit || 'unit',
-        notes: ing.notes
-      })) || [],
-      instructions: recipe.instructions?.map((inst: any, index: number) => ({
-        step: inst.step || index + 1,
-        instruction: inst.instruction && inst.instruction.trim() ? inst.instruction.trim() : `Step ${index + 1}`,
-        time: inst.time,
-        temperature: inst.temperature,
-        tips: inst.tips
-      })) || [],
+      ingredients: recipe.ingredients?.map((ing: any, index: number) => {
+        console.log(`Processing ingredient ${index}:`, ing);
+        return {
+          name: String(ing.name && ing.name.trim ? ing.name.trim() : `Ingredient ${index + 1}`),
+          quantity: Number(ing.quantity) || 1,
+          unit: String(ing.unit || 'unit'),
+          notes: ing.notes ? String(ing.notes) : undefined
+        };
+      }) || [],
+      instructions: recipe.instructions?.map((inst: any, index: number) => {
+        console.log(`Processing instruction ${index}:`, inst);
+        return {
+          step: Number(inst.step) || index + 1,
+          instruction: String(inst.instruction && inst.instruction.trim ? inst.instruction.trim() : `Step ${index + 1}`),
+          time: inst.time ? Number(inst.time) : undefined,
+          temperature: inst.temperature ? Number(inst.temperature) : undefined,
+          tips: inst.tips ? String(inst.tips) : undefined
+        };
+      }) || [],
       tags: recipe.tags || [],
       tips: recipe.tips || [],
       nutritionNotes: recipe.nutritionNotes
@@ -364,53 +371,87 @@ export default function EnhancedAIRecipes() {
   };
 
   const handleSaveRecipe = async (recipe: EnhancedRecipe) => {
+    log.info('=== Starting recipe save ===');
+    log.info('Input recipe:', recipe);
+    log.info('Session user ID:', session?.user?.id);
+
     if (!session?.user?.id) {
-      setError('Please sign in to save recipes');
+      const errorMsg = 'Please sign in to save recipes';
+      console.error('Save failed: No user session');
+      setError(errorMsg);
+      Alert.alert('Authentication Error', errorMsg);
       return;
     }
 
     try {
-      // Convert enhanced recipe to app format
-      const recipeData = {
-        name: recipe.name,
-        ingredients: JSON.stringify(recipe.ingredients.map(ing =>
-          `${ing.quantity} ${ing.unit} ${ing.name}${ing.notes ? ` (${ing.notes})` : ''}`
-        )),
-        instructions: JSON.stringify(recipe.instructions.map(inst => inst.instruction)),
-        servings: recipe.servings,
-        prepTime: recipe.prepTime,
-        cookTime: recipe.cookTime,
-        difficulty: normalizeDifficulty(String(recipe.difficulty)),
-        category: recipe.cuisine,
-        calories: recipe.calories,
-        protein: recipe.protein,
-        carbs: recipe.carbs,
-        fat: recipe.fat,
-        userId: session.user.id,
-        imageUrl: `https://source.unsplash.com/400x300/?${encodeURIComponent(recipe.name)},food`
-      } as const;
+      // Convert enhanced recipe to app format with proper data types
+      const ingredientsArray = recipe.ingredients.map(ing =>
+        `${ing.quantity || ''} ${ing.unit || ''} ${ing.name || ''}${ing.notes ? ` (${ing.notes})` : ''}`
+      ).filter(ing => ing.trim() !== '');
 
-      console.log('Attempting to save recipe:', recipeData);
+      const instructionsArray = recipe.instructions.map(inst => 
+        String(inst.instruction || '')
+      ).filter(inst => inst.trim() !== '');
+
+      const recipeData = {
+        name: String(recipe.name || 'Untitled Recipe'),
+        description: String(recipe.description || 'A delicious recipe'),
+        ingredients: JSON.stringify(ingredientsArray), // Convert to JSON string
+        instructions: JSON.stringify(instructionsArray), // Convert to JSON string
+        servings: Number(recipe.servings) || 4,
+        prepTime: Number(recipe.prepTime) || 15,
+        cookTime: Number(recipe.cookTime) || 20,
+        difficulty: normalizeDifficulty(String(recipe.difficulty || 'Easy')),
+        category: String(recipe.cuisine || 'International'),
+        calories: Number(recipe.calories) || 400,
+        protein: Number(recipe.protein) || 20,
+        carbs: Number(recipe.carbs) || 40,
+        fat: Number(recipe.fat) || 15,
+        userId: session.user.id,
+        imageUrl: `https://source.unsplash.com/400x300/?${encodeURIComponent(recipe.name || 'food')},food`,
+        source: 'AI Generated',
+        tags: ['AI Generated'] // Keep as array, not JSON string
+      };
+
+      log.info('=== Recipe data prepared for save ===');
+      log.info('Recipe data:', JSON.stringify(recipeData, null, 2));
+      log.info('Ingredients length:', ingredientsArray.length);
+      log.info('Instructions length:', instructionsArray.length);
+
       const client = getAmplifyClient();
-      await client.models.Recipe.create(recipeData);
-      console.log('Recipe save succeeded');
+      log.info('Amplify client obtained, attempting save...');
+      
+      const result = await client.models.Recipe.create(recipeData);
+      log.info('=== Recipe save succeeded ===');
+      log.info('Save result:', result);
       
       // Track achievements
       await incrementStat('recipes_created');
       await incrementStat('ai_recipes_added');
       
-      // Show success message or navigate
+      // Show success message
       setShowRecipeModal(false);
+      setError('');
+      Alert.alert('Success', 'Recipe saved successfully!');
       router.push('/(tabs)/recipes');
       
     } catch (err) {
-      console.error('Error saving recipe:', err);
-      setError(err && typeof err === 'object' && 'message' in err ? (err as any).message : 'Failed to save recipe');
-      if (typeof window !== 'undefined' && window.alert) {
-        window.alert('Failed to save recipe: ' + (err && typeof err === 'object' && 'message' in err ? (err as any).message : err));
-      } else if (typeof Alert !== 'undefined') {
-        Alert.alert('Save Error', err && typeof err === 'object' && 'message' in err ? (err as any).message : 'Failed to save recipe');
+      log.error('=== Recipe save failed ===');
+      log.error('Error object:', err);
+      console.error('Error type:', typeof err);
+      console.error('Error constructor:', err?.constructor?.name);
+      
+      if (err && typeof err === 'object') {
+        console.error('Error message:', (err as any).message);
+        console.error('Error stack:', (err as any).stack);
+        console.error('Error details:', JSON.stringify(err, Object.getOwnPropertyNames(err), 2));
       }
+      
+      const errorMessage = err && typeof err === 'object' && 'message' in err ? (err as any).message : String(err || 'Unknown error');
+      console.error('Formatted error message:', errorMessage);
+      
+      setError(`Save failed: ${errorMessage}`);
+      Alert.alert('Save Error', `Recipe save failed: ${errorMessage}\n\nCheck the console for detailed logs.`);
     }
   };
 
@@ -481,22 +522,22 @@ export default function EnhancedAIRecipes() {
                   setShowRecipeModal(true);
                 }}
               >
-                <Text style={styles.recipeName}>{recipe.name}</Text>
+                <Text style={styles.recipeName}>{String(recipe.name || '')}</Text>
                 <Text style={styles.recipeDescription} numberOfLines={2}>
-                  {recipe.description}
+                  {String(recipe.description || '')}
                 </Text>
                 <View style={styles.recipeMetrics}>
                   <View style={styles.metric}>
                     <Ionicons name="time" size={12} color={Colors.primary} />
-                    <Text style={styles.metricText}>{recipe.totalTime}m</Text>
+                    <Text style={styles.metricText}>{String(recipe.totalTime || 0)}m</Text>
                   </View>
                   <View style={styles.metric}>
                     <Ionicons name="flame" size={12} color={Colors.warning} />
-                    <Text style={styles.metricText}>{recipe.calories}</Text>
+                    <Text style={styles.metricText}>{String(recipe.calories || 0)}</Text>
                   </View>
                   <View style={styles.metric}>
                     <Ionicons name="restaurant" size={12} color={Colors.secondary} />
-                    <Text style={styles.metricText}>{recipe.servings}</Text>
+                    <Text style={styles.metricText}>{String(recipe.servings || 0)}</Text>
                   </View>
                 </View>
               </TouchableOpacity>
@@ -521,7 +562,14 @@ export default function EnhancedAIRecipes() {
             {selectedRecipe && (
               <TouchableOpacity
                 style={styles.saveButton}
-                onPress={() => handleSaveRecipe(selectedRecipe)}
+                onPress={() => {
+                  console.log('🔘 Save button pressed, selectedRecipe:', selectedRecipe?.name);
+                  if (selectedRecipe) {
+                    handleSaveRecipe(selectedRecipe);
+                  } else {
+                    console.error('❌ No selectedRecipe available');
+                  }
+                }}
               >
                 <Ionicons name="bookmark" size={16} color={Colors.surface} />
                 <Text style={styles.saveButtonText}>Save</Text>
@@ -531,27 +579,27 @@ export default function EnhancedAIRecipes() {
 
           {selectedRecipe && (
             <ScrollView style={styles.modalContent}>
-              <Text style={styles.recipeTitle}>{selectedRecipe.name}</Text>
-              <Text style={styles.recipeSubtitle}>{selectedRecipe.description}</Text>
+              <Text style={styles.recipeTitle}>{String(selectedRecipe.name || '')}</Text>
+              <Text style={styles.recipeSubtitle}>{String(selectedRecipe.description || '')}</Text>
 
               {/* Enhanced Nutrition Info */}
               <View style={styles.nutritionCard}>
                 <Text style={styles.sectionTitle}>Nutrition per serving</Text>
                 <View style={styles.nutritionGrid}>
                   <View style={styles.nutritionItem}>
-                    <Text style={styles.nutritionValue}>{selectedRecipe.calories}</Text>
+                    <Text style={styles.nutritionValue}>{String(selectedRecipe.calories || 0)}</Text>
                     <Text style={styles.nutritionLabel}>Calories</Text>
                   </View>
                   <View style={styles.nutritionItem}>
-                    <Text style={styles.nutritionValue}>{selectedRecipe.protein}g</Text>
+                    <Text style={styles.nutritionValue}>{String(selectedRecipe.protein || 0)}g</Text>
                     <Text style={styles.nutritionLabel}>Protein</Text>
                   </View>
                   <View style={styles.nutritionItem}>
-                    <Text style={styles.nutritionValue}>{selectedRecipe.carbs}g</Text>
+                    <Text style={styles.nutritionValue}>{String(selectedRecipe.carbs || 0)}g</Text>
                     <Text style={styles.nutritionLabel}>Carbs</Text>
                   </View>
                   <View style={styles.nutritionItem}>
-                    <Text style={styles.nutritionValue}>{selectedRecipe.fat}g</Text>
+                    <Text style={styles.nutritionValue}>{String(selectedRecipe.fat || 0)}g</Text>
                     <Text style={styles.nutritionLabel}>Fat</Text>
                   </View>
                 </View>
@@ -561,19 +609,19 @@ export default function EnhancedAIRecipes() {
               <View style={styles.metaCard}>
                 <View style={styles.metaItem}>
                   <Ionicons name="people" size={16} color={Colors.primary} />
-                  <Text style={styles.metaText}>{selectedRecipe.servings} servings</Text>
+                  <Text style={styles.metaText}>{String(selectedRecipe.servings || 0)} servings</Text>
                 </View>
                 <View style={styles.metaItem}>
                   <Ionicons name="time" size={16} color={Colors.secondary} />
-                  <Text style={styles.metaText}>{selectedRecipe.prepTime}m prep</Text>
+                  <Text style={styles.metaText}>{String(selectedRecipe.prepTime || 0)}m prep</Text>
                 </View>
                 <View style={styles.metaItem}>
                   <Ionicons name="flame" size={16} color={Colors.warning} />
-                  <Text style={styles.metaText}>{selectedRecipe.cookTime}m cook</Text>
+                  <Text style={styles.metaText}>{String(selectedRecipe.cookTime || 0)}m cook</Text>
                 </View>
                 <View style={styles.metaItem}>
                   <Ionicons name="bar-chart" size={16} color={Colors.accent} />
-                  <Text style={styles.metaText}>{selectedRecipe.difficulty}</Text>
+                  <Text style={styles.metaText}>{String(selectedRecipe.difficulty || 'Easy')}</Text>
                 </View>
               </View>
 
@@ -583,11 +631,11 @@ export default function EnhancedAIRecipes() {
                 {selectedRecipe.ingredients.map((ingredient, index) => (
                   <View key={index} style={styles.ingredientItem}>
                     <Text style={styles.ingredientQuantity}>
-                      {ingredient.quantity} {ingredient.unit}
+                      {String(ingredient.quantity || '')} {String(ingredient.unit || '')}
                     </Text>
-                    <Text style={styles.ingredientName}>{ingredient.name}</Text>
+                    <Text style={styles.ingredientName}>{String(ingredient.name || '')}</Text>
                     {ingredient.notes && (
-                      <Text style={styles.ingredientNotes}>({ingredient.notes})</Text>
+                      <Text style={styles.ingredientNotes}>({String(ingredient.notes)})</Text>
                     )}
                   </View>
                 ))}
@@ -599,17 +647,17 @@ export default function EnhancedAIRecipes() {
                 {selectedRecipe.instructions.map((instruction, index) => (
                   <View key={index} style={styles.instructionItem}>
                     <View style={styles.stepHeader}>
-                      <Text style={styles.stepNumber}>{instruction.step}</Text>
+                      <Text style={styles.stepNumber}>{String(instruction.step || index + 1)}</Text>
                       {instruction.time && (
                         <View style={styles.stepTiming}>
                           <Ionicons name="timer" size={12} color={Colors.primary} />
-                          <Text style={styles.stepTime}>{instruction.time}m</Text>
+                          <Text style={styles.stepTime}>{String(instruction.time)}m</Text>
                         </View>
                       )}
                     </View>
-                    <Text style={styles.instructionText}>{instruction.instruction}</Text>
+                    <Text style={styles.instructionText}>{String(instruction.instruction || '')}</Text>
                     {instruction.tips && (
-                      <Text style={styles.instructionTips}>💡 {instruction.tips}</Text>
+                      <Text style={styles.instructionTips}>💡 {String(instruction.tips)}</Text>
                     )}
                   </View>
                 ))}
@@ -622,7 +670,7 @@ export default function EnhancedAIRecipes() {
                   {selectedRecipe.tips.map((tip, index) => (
                     <View key={index} style={styles.tipItem}>
                       <Ionicons name="bulb" size={16} color={Colors.warning} />
-                      <Text style={styles.tipText}>{tip}</Text>
+                      <Text style={styles.tipText}>{String(tip || '')}</Text>
                     </View>
                   ))}
                 </View>

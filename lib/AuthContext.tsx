@@ -82,7 +82,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       setSession(session)
       if (event === 'SIGNED_IN') {
-        router.replace('/(tabs)/recipes')
+        router.replace('/(tabs)/home')
       } else if (event === 'SIGNED_OUT') {
         // Clean up all subscriptions when user signs out
         // subscriptionManager.removeAll() // temporarily disabled

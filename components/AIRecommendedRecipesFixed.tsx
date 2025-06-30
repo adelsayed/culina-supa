@@ -350,10 +350,10 @@ Return ONLY a valid JSON array of 5 recipes with this exact format:
             <Text style={styles.recipeDescription}>{recipe.description}</Text>
             
             <View style={styles.recipeMetrics}>
-              <Text style={styles.metricText}>🍽️ {recipe.cuisine}</Text>
-              <Text style={styles.metricText}>🔥 {recipe.calories} cal</Text>
-              <Text style={styles.metricText}>⏱️ {recipe.cookTime}</Text>
-              <Text style={styles.metricText}>📊 {recipe.difficulty}</Text>
+              <Text style={styles.metricText}>🍽️ {String(recipe.cuisine)}</Text>
+              <Text style={styles.metricText}>🔥 {String(recipe.calories)} cal</Text>
+              <Text style={styles.metricText}>⏱️ {String(recipe.cookTime)}</Text>
+              <Text style={styles.metricText}>📊 {String(recipe.difficulty)}</Text>
             </View>
 
             <Text style={styles.ingredientsTitle}>Ingredients:</Text>

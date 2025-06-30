@@ -47,9 +47,9 @@ function InitialLayout() {
       return;
     }
 
-    // Normal navigation logic - only redirect to recipes if NOT in recovery mode
+    // Normal navigation logic - only redirect to home if NOT in recovery mode
     if (session && inAuthGroup && !isResetPassword && !isPasswordRecovery) {
-      router.replace('/(tabs)/recipes');
+      router.replace('/(tabs)/home');
     } else if (!session && !inAuthGroup) {
       router.replace('/auth/sign-in');
     }

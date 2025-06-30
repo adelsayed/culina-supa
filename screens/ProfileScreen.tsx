@@ -299,17 +299,17 @@ export default function ProfileScreen() {
                     <View style={styles.healthRow}>
                       <View style={styles.healthMetric}>
                         <Text style={[styles.metricValue, { color: getBMIColor(healthMetrics.bmi) }]}>
-                          {healthMetrics.bmi}
+                          {String(healthMetrics.bmi)}
                         </Text>
                         <Text style={styles.metricLabel}>BMI</Text>
-                        <Text style={styles.metricCategory}>{healthMetrics.bmiCategory}</Text>
+                        <Text style={styles.metricCategory}>{String(healthMetrics.bmiCategory)}</Text>
                       </View>
                       <View style={styles.healthMetric}>
-                        <Text style={styles.metricValue}>{healthMetrics.dailyCalorieNeeds}</Text>
+                        <Text style={styles.metricValue}>{String(healthMetrics.dailyCalorieNeeds)}</Text>
                         <Text style={styles.metricLabel}>Daily Calories</Text>
                       </View>
                       <View style={styles.healthMetric}>
-                        <Text style={styles.metricValue}>{profile?.age}</Text>
+                        <Text style={styles.metricValue}>{String(profile?.age || 'N/A')}</Text>
                         <Text style={styles.metricLabel}>Age</Text>
                       </View>
                     </View>
@@ -318,15 +318,15 @@ export default function ProfileScreen() {
                         <Text style={styles.macroTitle}>Daily Macro Targets</Text>
                         <View style={styles.macroTargets}>
                           <View style={styles.macroItem}>
-                            <Text style={styles.macroValue}>{macroTargets.protein}g</Text>
+                            <Text style={styles.macroValue}>{String(macroTargets.protein)}g</Text>
                             <Text style={styles.macroLabel}>Protein</Text>
                           </View>
                           <View style={styles.macroItem}>
-                            <Text style={styles.macroValue}>{macroTargets.carbs}g</Text>
+                            <Text style={styles.macroValue}>{String(macroTargets.carbs)}g</Text>
                             <Text style={styles.macroLabel}>Carbs</Text>
                           </View>
                           <View style={styles.macroItem}>
-                            <Text style={styles.macroValue}>{macroTargets.fat}g</Text>
+                            <Text style={styles.macroValue}>{String(macroTargets.fat)}g</Text>
                             <Text style={styles.macroLabel}>Fat</Text>
                           </View>
                         </View>
