@@ -1,5 +1,47 @@
 # Culina App Changelog
 
+## [2025-01-04] AI Meal Planner & Data Management Features
+
+### 🚀 **Major Features**
+- **AI-Generated Recipe Details Fix**: Fixed issue where AI-generated recipes showed empty ingredients and instructions sections by providing helpful placeholder content that guides users to customize their recipes
+- **Enhanced Recipe Lookup**: Improved recipe lookup logic in meal planner to handle newly created AI recipes through local state management and enhanced fallback search
+- **Data Management Tools**: Added comprehensive data management section to profile screen with two powerful cleanup features:
+  - **Clean Meal Plan**: Button to remove all meal plan entries with confirmation dialog and automatic refresh
+  - **Delete AI Recipes**: Button to permanently delete all AI-generated recipes with safety confirmations
+
+### 🐛 **Critical Bug Fixes**
+- **"Cannot read property 'models' of undefined" Fixed**: Resolved critical error in meal planner where `amplifyClient` was undefined by updating imports to use `getAmplifyClient()` function across all affected components:
+  - Fixed meal planner AI recipe creation failures
+  - Updated RecommendedRecipes.tsx, AIMealSuggestions.tsx, SimpleRecipeImport.tsx
+  - Fixed recipe detail screens and recipe management components
+- **"Unknown Recipe" Issue Resolved**: Fixed AI-generated recipes appearing as "Unknown Recipe" in meal planner by:
+  - Adding immediate recipe state updates when meal plan entries are created
+  - Implementing enhanced recipe lookup with multiple fallback sources
+  - Setting up automatic data refresh after AI meal plan completion
+- **AI Recipe Details Display**: Fixed empty ingredients/instructions in AI-generated recipe detail screens by providing meaningful placeholder content
+
+### 🔧 **Technical Improvements**
+- **Global Refresh Mechanism**: Implemented global meal plan refresh function that can be triggered from anywhere in the app
+- **Enhanced Debugging**: Added comprehensive console logging for meal plan operations to aid in troubleshooting
+- **Improved Error Handling**: Better error messages and user feedback for all data management operations
+- **Recipe State Management**: Enhanced local recipe state to immediately include newly created recipes
+- **Safety Confirmations**: All destructive operations require explicit user confirmation with clear descriptions
+
+### 🎯 **User Experience Improvements**
+- **Helpful Placeholder Content**: AI-generated recipes now show helpful instructions instead of empty sections:
+  - Ingredients section explains the recipe origin and encourages customization
+  - Instructions provide clear steps for editing and improving the recipe
+- **Data Management Controls**: New profile section provides easy access to cleanup tools
+- **Loading States**: All buttons show appropriate loading indicators during operations
+- **Success Feedback**: Clear messages showing how many items were affected by cleanup operations
+- **Automatic Refresh**: Meal planner automatically updates after successful operations
+
+### 🛡️ **Error Handling & Safety**
+- **Confirmation Dialogs**: All destructive operations require explicit user confirmation
+- **Comprehensive Logging**: Enhanced debugging capabilities with detailed console output
+- **Graceful Degradation**: Operations handle missing or invalid data without crashing
+- **User Feedback**: Clear success and error messages for all operations
+
 ## [2025-06-30] Add Recipe & Recipe Display Fixes
 
 ### 🐛 **Critical Bug Fixes**

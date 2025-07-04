@@ -14,7 +14,7 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import ModalSelector from 'react-native-modal-selector';
-import { amplifyClient, getGuestCredentials } from '../../lib/amplify';
+import { getAmplifyClient } from '../../lib/amplify';
 import { useAuth } from '../../lib/AuthContext';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { uploadData } from 'aws-amplify/storage';
@@ -56,14 +56,15 @@ export default function EditRecipeScreen() {
 
       try {
         // Check if Amplify models are available
-        if (!amplifyClient?.models || !(amplifyClient.models as any).Recipe) {
+        const client = getAmplifyClient();
+        if (!client?.models || !client.models.Recipe) {
           console.log('⚠️ Amplify Recipe model not available');
           setError('Recipe backend not configured');
           setLoading(false);
           return;
         }
         
-        const result = await (amplifyClient.models as any).Recipe.get({ id: id as string });
+        const result = await client.models.Recipe.get({ id: id as string });
         if (result.data) {
           const recipeData = result.data;
           setRecipe(recipeData);
@@ -241,12 +242,13 @@ export default function EditRecipeScreen() {
 
       // Update recipe
       // Check if Amplify models are available
-      if (!amplifyClient?.models || !(amplifyClient.models as any).Recipe) {
+      const client = getAmplifyClient();
+      if (!client?.models || !client.models.Recipe) {
         setError('Recipe backend not configured');
         return;
       }
-      
-      await (amplifyClient.models as any).Recipe.update({
+
+      await client.models.Recipe.update({
         id: recipe.id,
         name: title.trim(),
         imageUrl: finalImageUrl,

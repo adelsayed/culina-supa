@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../constants/DesignSystem';
-import { amplifyClient } from '../../lib/amplify';
+import { getAmplifyClient } from '../../lib/amplify';
 import { useAuth } from '../../lib/AuthContext';
 import { useUserProfile } from '../../hooks/useUserProfile';
 import { useNavigation } from '@react-navigation/native';
@@ -102,7 +102,8 @@ export default function SimpleRecipeImport({
         return;
       }
 
-      const { data: newRecipe } = await (amplifyClient.models as any).Recipe.create({
+      const client = getAmplifyClient();
+      const { data: newRecipe } = await client.models.Recipe.create({
         userId: session.user.id,
         name: parsedRecipe.name,
         ingredients: JSON.stringify(parsedRecipe.ingredients),
@@ -266,7 +267,8 @@ ${content}`;
       console.log('✅ Successfully extracted recipe:', extractedRecipe.name);
 
       // 3. Save to database
-      const { data: newRecipe } = await (amplifyClient.models as any).Recipe.create({
+      const client = getAmplifyClient();
+      const { data: newRecipe } = await client.models.Recipe.create({
         userId: session.user.id,
         name: extractedRecipe.name.trim(),
         ingredients: JSON.stringify(extractedRecipe.ingredients.map((i: string) => i.trim())),

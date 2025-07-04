@@ -145,17 +145,37 @@ export const useMealPlanner = (initialWeekStart?: Date) => {
       // Combine entries with their recipes
       const entriesWithRecipes = (entries || []).map((entry: any) => {
         let recipe;
+        console.log('🔍 Processing meal plan entry:', entry.id, 'recipeId:', entry.recipeId, 'recipeType:', entry.recipeType);
+        
         if (entry.recipeType === 'Recipe') {
           recipe = userRecipes?.find((r: any) => r.id === entry.recipeId);
         } else if (entry.recipeType === 'SmartRecipe') {
           recipe = smartRecipes?.find((r: any) => r.id === entry.recipeId);
         } else {
-          // Fallback for entries without recipeType
-          recipe = userRecipes?.find((r: any) => r.id === entry.recipeId) || smartRecipes?.find((r: any) => r.id === entry.recipeId);
+          // Enhanced fallback for entries without recipeType
+          // First try user recipes (most common)
+          recipe = userRecipes?.find((r: any) => r.id === entry.recipeId);
+          
+          // If not found, try smart recipes
+          if (!recipe) {
+            recipe = smartRecipes?.find((r: any) => r.id === entry.recipeId);
+          }
+          
+          // If still not found, check local recipes state (for newly created recipes)
+          if (!recipe) {
+            recipe = recipes.find((r: any) => r.id === entry.recipeId);
+          }
         }
+        
         if (!recipe) {
-          console.warn('No recipe found for entry.recipeId:', entry.recipeId, 'Available recipe IDs:', userRecipes?.map((r: any) => r.id), smartRecipes?.map((r: any) => r.id));
+          console.warn('❌ No recipe found for entry.recipeId:', entry.recipeId);
+          console.warn('📋 Total user recipes available:', userRecipes?.length || 0);
+          console.warn('🧠 Total smart recipes available:', smartRecipes?.length || 0);
+          console.warn('🏠 Total local recipes available:', recipes?.length || 0);
+        } else {
+          console.log('✅ Found recipe:', recipe.name, 'for entry:', entry.id);
         }
+        
         return { ...entry, recipe };
       });
 
@@ -211,11 +231,23 @@ export const useMealPlanner = (initialWeekStart?: Date) => {
       }
       
       if (newEntry) {
+        console.log('🔍 Adding new meal plan entry:', newEntry.id, 'for recipe:', recipe.id, 'name:', recipe.name);
+        
+        // Add the recipe to our local recipes state if it's not already there
+        setRecipes(prev => {
+          const existingRecipe = prev.find(r => r.id === recipe.id);
+          if (!existingRecipe) {
+            console.log('➕ Adding recipe to local state:', recipe.name);
+            return [...prev, recipe];
+          }
+          return prev;
+        });
+        
         // Ensure createdAt is a string before adding to state
-        const entryWithCreatedAt: MealPlanEntryWithRecipe = { 
-          ...newEntry, 
+        const entryWithCreatedAt: MealPlanEntryWithRecipe = {
+          ...newEntry,
           createdAt: newEntry.createdAt || new Date().toISOString(),
-          recipe: recipes.find(r => r.id === recipe.id)
+          recipe: recipe // Use the recipe directly instead of searching for it
         };
         setMealPlanEntries(prev => [...prev, entryWithCreatedAt]);
         return true;

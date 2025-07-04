@@ -1,4 +1,4 @@
-package com.supabase
+package com.adelsayed.culina
 
 import android.os.Build
 import android.os.Bundle

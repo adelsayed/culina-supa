@@ -19,6 +19,7 @@ import { useUserProfile } from '../hooks/useUserProfile';
 import { calculateWeightGoalProgress, getProgressMotivation, formatTimelineText, getBMIColor } from '../utils/progressTracking';
 import DietaryPreferencesSection from './DietaryPreferencesSection';
 import { Colors, Typography, Spacing, BorderRadius, Shadows, ComponentStyles } from '../constants/DesignSystem';
+import { getAmplifyClient } from '../lib/amplify';
 
 export default function ProfileScreen() {
   const { session, signOut } = useAuth();
@@ -73,6 +74,10 @@ export default function ProfileScreen() {
   const [aiSettingsSaving, setAiSettingsSaving] = useState(false);
   const [aiSettingsSaved, setAiSettingsSaved] = useState(false);
   const [aiSettingsError, setAiSettingsError] = useState<string | null>(null);
+
+  // Data management states
+  const [cleaningMealPlan, setCleaningMealPlan] = useState(false);
+  const [deletingAIRecipes, setDeletingAIRecipes] = useState(false);
 
   // Sync AI settings with profile
   React.useEffect(() => {
@@ -207,6 +212,127 @@ export default function ProfileScreen() {
           text: 'Sign Out',
           style: 'destructive',
           onPress: () => signOut(),
+        },
+      ]
+    );
+  };
+
+  // Clean meal plan handler
+  const handleCleanMealPlan = async () => {
+    Alert.alert(
+      'Clean Meal Plan',
+      'This will remove all meal plan entries. Are you sure you want to continue?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Clean',
+          style: 'destructive',
+          onPress: async () => {
+            setCleaningMealPlan(true);
+            try {
+              const client = getAmplifyClient();
+              if (!client?.models?.MealPlanEntry) {
+                Alert.alert('Error', 'Backend not available');
+                return;
+              }
+
+              // Get all meal plan entries for the user
+              const { data: entries } = await client.models.MealPlanEntry.list({
+                filter: { userId: { eq: session?.user?.id } }
+              });
+
+              console.log('Found meal plan entries to delete:', entries?.length || 0);
+              console.log('Entries:', entries?.map(e => ({ id: (e as any).id, date: (e as any).date, mealType: (e as any).mealType })));
+
+              if (!entries || entries.length === 0) {
+                Alert.alert('Info', 'No meal plan entries found to clean.');
+                return;
+              }
+
+              // Delete all entries
+              const deletePromises = (entries || []).map(async (entry) => {
+                console.log('Deleting entry:', (entry as any).id);
+                try {
+                  const result = await client.models.MealPlanEntry.delete({ id: (entry as any).id });
+                  console.log('Delete result:', result);
+                  return result;
+                } catch (error) {
+                  console.error('Failed to delete entry:', (entry as any).id, error);
+                  throw error;
+                }
+              });
+
+              const results = await Promise.all(deletePromises);
+              console.log('All deletions completed:', results.length);
+
+              // Try to trigger a global refresh if available
+              if (typeof (global as any).refreshMealPlan === 'function') {
+                (global as any).refreshMealPlan();
+              }
+
+              Alert.alert(
+                'Success',
+                `Cleaned ${entries?.length || 0} meal plan entries. The meal planner will refresh automatically.`,
+                [{ text: 'OK' }]
+              );
+            } catch (error) {
+              console.error('Error cleaning meal plan:', error);
+              Alert.alert('Error', 'Failed to clean meal plan. Please try again.');
+            } finally {
+              setCleaningMealPlan(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  // Delete AI recipes handler
+  const handleDeleteAIRecipes = async () => {
+    Alert.alert(
+      'Delete AI Recipes',
+      'This will permanently delete all AI-generated recipes. Are you sure you want to continue?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            setDeletingAIRecipes(true);
+            try {
+              const client = getAmplifyClient();
+              if (!client?.models?.Recipe) {
+                Alert.alert('Error', 'Backend not available');
+                return;
+              }
+
+              // Get all AI-generated recipes for the user
+              const { data: recipes } = await client.models.Recipe.list({
+                filter: {
+                  userId: { eq: session?.user?.id },
+                  source: { eq: 'AI Generated' }
+                }
+              });
+
+              // Delete all AI recipes
+              const deletePromises = (recipes || []).map(recipe =>
+                client.models.Recipe.delete({ id: (recipe as any).id })
+              );
+
+              await Promise.all(deletePromises);
+
+              Alert.alert(
+                'Success',
+                `Deleted ${recipes?.length || 0} AI-generated recipes.`,
+                [{ text: 'OK' }]
+              );
+            } catch (error) {
+              console.error('Error deleting AI recipes:', error);
+              Alert.alert('Error', 'Failed to delete AI recipes. Please try again.');
+            } finally {
+              setDeletingAIRecipes(false);
+            }
+          },
         },
       ]
     );
@@ -517,6 +643,49 @@ export default function ProfileScreen() {
               </View>
             </TouchableOpacity>
           </View>
+        </View>
+
+        {/* Data Management */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Data Management</Text>
+          
+          <TouchableOpacity
+            style={[styles.dataButton, styles.cleanButton]}
+            onPress={handleCleanMealPlan}
+            disabled={cleaningMealPlan}
+          >
+            <View style={styles.dataButtonContent}>
+              <Ionicons name="calendar-clear" size={20} color="#FF9500" />
+              <View style={styles.dataButtonText}>
+                <Text style={styles.dataButtonTitle}>Clean Meal Plan</Text>
+                <Text style={styles.dataButtonSubtitle}>Remove all meal plan entries</Text>
+              </View>
+              {cleaningMealPlan ? (
+                <ActivityIndicator size="small" color="#FF9500" />
+              ) : (
+                <Ionicons name="chevron-forward" size={20} color="#FF9500" />
+              )}
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.dataButton, styles.deleteButton]}
+            onPress={handleDeleteAIRecipes}
+            disabled={deletingAIRecipes}
+          >
+            <View style={styles.dataButtonContent}>
+              <Ionicons name="trash" size={20} color="#FF3B30" />
+              <View style={styles.dataButtonText}>
+                <Text style={styles.dataButtonTitle}>Delete AI Recipes</Text>
+                <Text style={styles.dataButtonSubtitle}>Remove all AI-generated recipes</Text>
+              </View>
+              {deletingAIRecipes ? (
+                <ActivityIndicator size="small" color="#FF3B30" />
+              ) : (
+                <Ionicons name="chevron-forward" size={20} color="#FF3B30" />
+              )}
+            </View>
+          </TouchableOpacity>
         </View>
 
         {/* Sign Out */}
@@ -1258,5 +1427,40 @@ const styles = StyleSheet.create({
   modalContent: {
     flex: 1,
     padding: 20,
+  },
+  // Data Management Button Styles
+  dataButton: {
+    backgroundColor: Colors.surface,
+    borderRadius: BorderRadius.lg,
+    marginBottom: Spacing.md,
+    borderWidth: 1,
+    borderColor: Colors.borderLight,
+  },
+  cleanButton: {
+    borderColor: '#FF9500',
+    backgroundColor: '#FFF7E6',
+  },
+  deleteButton: {
+    borderColor: '#FF3B30',
+    backgroundColor: '#FFF0F0',
+  },
+  dataButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: Spacing.lg,
+  },
+  dataButtonText: {
+    flex: 1,
+    marginLeft: Spacing.md,
+  },
+  dataButtonTitle: {
+    fontSize: Typography.sizes.base,
+    fontWeight: Typography.weights.semibold,
+    color: Colors.textPrimary,
+    marginBottom: Spacing.xs,
+  },
+  dataButtonSubtitle: {
+    fontSize: Typography.sizes.sm,
+    color: Colors.textSecondary,
   },
 });

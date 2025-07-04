@@ -27,12 +27,6 @@
         <category android:name="android.intent.category.BROWSABLE"/>
         <data android:scheme="culina"/>
       </intent-filter>
-      <intent-filter android:autoVerify="true" data-generated="true">
-        <action android:name="android.intent.action.VIEW"/>
-        <data android:scheme="com.supabase" android:host="fygrhhsgmymkriudjtul.supabase.co" android:pathPrefix="/auth/v1/callback"/>
-        <category android:name="android.intent.category.BROWSABLE"/>
-        <category android:name="android.intent.category.DEFAULT"/>
-      </intent-filter>
     </activity>
   </application>
 </manifest>

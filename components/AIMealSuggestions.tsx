@@ -13,7 +13,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useUserProfile } from '../hooks/useUserProfile';
 import { useAuth } from '../lib/AuthContext';
-import { amplifyClient } from '../lib/amplify';
+import { getAmplifyClient } from '../lib/amplify';
 import { useAchievements } from '../hooks/useAchievements';
 import type { Schema } from '../amplify/data/resource';
 
@@ -221,7 +221,8 @@ Return exactly this JSON format with 3 recipes:
         category: mealType,
         tags: recipe.dietaryTags || [],
       });
-      const { data: savedRecipe } = await amplifyClient.models.Recipe.create({
+      const client = getAmplifyClient();
+      const { data: savedRecipe } = await client.models.Recipe.create({
         name: recipe.name,
         ingredients: JSON.stringify(ingredientsArray),
         instructions: JSON.stringify(instructionsArray),

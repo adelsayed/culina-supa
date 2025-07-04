@@ -63,14 +63,14 @@ export default function RecipeDetails() {
         const amplifyClient = getAmplifyClient();
         
         // Check if Amplify models are available
-        if (!amplifyClient?.models || !(amplifyClient.models as any).Recipe) {
+        if (!amplifyClient?.models || !amplifyClient.models.Recipe) {
           console.log('⚠️ Amplify Recipe model not available');
           setError('Recipe backend not configured');
           setLoading(false);
           return;
         }
         
-        const result = await (amplifyClient.models as any).Recipe.get({ id: id as string });
+        const result = await amplifyClient.models.Recipe.get({ id: id as string });
         if (mounted && result.data) {
           setRecipe(result.data);
           console.log('Recipe details record:', result.data);

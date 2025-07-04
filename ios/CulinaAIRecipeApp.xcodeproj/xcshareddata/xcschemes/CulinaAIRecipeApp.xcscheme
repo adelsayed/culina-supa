@@ -15,9 +15,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-               BuildableName = "supaouth.app"
-               BlueprintName = "supaouth"
-               ReferencedContainer = "container:supaouth.xcodeproj">
+               BuildableName = "CulinaAIRecipeApp.app"
+               BlueprintName = "CulinaAIRecipeApp"
+               ReferencedContainer = "container:CulinaAIRecipeApp.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -33,9 +33,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "00E356ED1AD99517003FC87E"
-               BuildableName = "supaouthTests.xctest"
-               BlueprintName = "supaouthTests"
-               ReferencedContainer = "container:supaouth.xcodeproj">
+               BuildableName = "CulinaAIRecipeAppTests.xctest"
+               BlueprintName = "CulinaAIRecipeAppTests"
+               ReferencedContainer = "container:CulinaAIRecipeApp.xcodeproj">
             </BuildableReference>
          </TestableReference>
       </Testables>
@@ -55,9 +55,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-            BuildableName = "supaouth.app"
-            BlueprintName = "supaouth"
-            ReferencedContainer = "container:supaouth.xcodeproj">
+            BuildableName = "CulinaAIRecipeApp.app"
+            BlueprintName = "CulinaAIRecipeApp"
+            ReferencedContainer = "container:CulinaAIRecipeApp.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </LaunchAction>
@@ -72,9 +72,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-            BuildableName = "supaouth.app"
-            BlueprintName = "supaouth"
-            ReferencedContainer = "container:supaouth.xcodeproj">
+            BuildableName = "CulinaAIRecipeApp.app"
+            BlueprintName = "CulinaAIRecipeApp"
+            ReferencedContainer = "container:CulinaAIRecipeApp.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>

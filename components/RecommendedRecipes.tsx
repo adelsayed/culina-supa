@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity, Image, StyleSheet } from 'react-native';
 import { useUserProfile } from '../hooks/useUserProfile';
 import { getPersonalizedRecipesAI, getPersonalizedRecipesLocal } from '../utils/personalizedRecommendations';
-import { amplifyClient } from '../lib/amplify';
+import { getAmplifyClient } from '../lib/amplify';
 
 export default function RecommendedRecipes({ maxResults = 10 }: { maxResults?: number }) {
   const { profile } = useUserProfile();
@@ -16,7 +16,8 @@ export default function RecommendedRecipes({ maxResults = 10 }: { maxResults?: n
   useEffect(() => {
     let mounted = true;
     setLoading(true);
-    amplifyClient.models.Recipe.list().then(({ data }) => {
+    const client = getAmplifyClient();
+    client.models.Recipe.list().then(({ data }) => {
       if (mounted) {
         setRecipes(data || []);
         setLoading(false);

@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "supa-outh",
-    "slug": "supa-outh",
-    "version": "1.0.0",
+    "name": "CulinaAIRecipeApp",
+    "slug": "culina-supa",
+    "version": "2.2.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
@@ -12,36 +12,9 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "auth.adel.com.supabase",
-      "associatedDomains": [
-        "applinks:fygrhhsgmymkriudjtul.supabase.co"
-      ],
-      "buildNumber": "1"
-    },
-    "android": {
-      "adaptiveIcon": {
-        "backgroundColor": "#ffffff"
-      },
-      "edgeToEdgeEnabled": true,
-      "package": "com.supabase",
-      "versionCode": 1,
-      "intentFilters": [
-        {
-          "action": "VIEW",
-          "autoVerify": true,
-          "data": [
-            {
-              "scheme": "com.supabase",
-              "host": "fygrhhsgmymkriudjtul.supabase.co",
-              "pathPrefix": "/auth/v1/callback"
-            }
-          ],
-          "category": [
-            "BROWSABLE",
-            "DEFAULT"
-          ]
-        }
-      ]
+      "bundleIdentifier": "com.adelsayed.culina",
+      "buildNumber": "1",
+      "developmentTeam": "B4K875YZF6"
     },
     "plugins": [
       "expo-secure-store",
@@ -55,8 +28,11 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "543387c1-0dd1-4136-85bf-b36d34774f63"
+        "projectId": "58fd0ac6-2ece-403d-8575-dcb4f46f4632"
       }
+    },
+    "android": {
+      "package": "com.adelsayed.culina"
     }
   }
 }

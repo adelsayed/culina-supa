@@ -27,7 +27,7 @@ import type { Schema } from '../../amplify/data/resource';
 import AIMealSuggestions from '../../components/AIMealSuggestions';
 import AIWeeklyPlanner from '../../components/mealplanner/AIWeeklyPlanner';
 import NutritionBalancer from '../../components/mealplanner/NutritionBalancer';
-import { amplifyClient } from '../../lib/amplify';
+import { getAmplifyClient } from '../../lib/amplify';
 
 type Recipe = Schema['Recipe'];
 type MealType = 'breakfast' | 'snack1' | 'lunch' | 'snack2' | 'dinner';
@@ -57,9 +57,18 @@ const MealPlannerScreen: React.FC = () => {
     addMealPlanEntry,
     removeMealPlanEntry,
     navigateToWeek,
+    refreshData,
   } = useMealPlanner(getWeekStartDate(selectedDate));
 
   const weekDates = getWeekDates(weekMealPlan.weekStartDate);
+
+  // Set up global refresh function
+  React.useEffect(() => {
+    (global as any).refreshMealPlan = refreshData;
+    return () => {
+      delete (global as any).refreshMealPlan;
+    };
+  }, [refreshData]);
 
   const navigateToPrevWeek = () => {
     const newWeekStart = navigateWeek(weekMealPlan.weekStartDate, 'prev');
@@ -156,8 +165,16 @@ const MealPlannerScreen: React.FC = () => {
           const newRecipeData = {
             name: meal.name,
             userId: session.user.id,
-            ingredients: '[]',
-            instructions: '[]',
+            ingredients: JSON.stringify([
+              'Ingredients will be generated based on the recipe name',
+              'This is an AI-generated meal plan item',
+              'Edit this recipe to add specific ingredients'
+            ]),
+            instructions: JSON.stringify([
+              '1. This recipe was generated as part of an AI meal plan',
+              '2. Edit this recipe to add detailed cooking instructions',
+              '3. The nutritional information has been estimated'
+            ]),
             servings: 1,
             calories: Math.round(dayPlan.totalCalories / 3),
             protein: Math.round(dayPlan.totalProtein / 3),
@@ -165,7 +182,7 @@ const MealPlannerScreen: React.FC = () => {
             fat: Math.round(dayPlan.totalFat / 3),
             prepTime: 20, // Default value
             cookTime: 20, // Default value
-            difficulty: normalizeDifficulty(meal.difficulty || 'medium'), // Always capitalized
+            difficulty: normalizeDifficulty('Medium'), // Always capitalized
             category: 'AI Generated',
             source: 'AI Generated', // Mark as AI-generated
             tags: ['ai-generated'], // Add a tag for filtering
@@ -173,13 +190,17 @@ const MealPlannerScreen: React.FC = () => {
 
           try {
             console.log('Attempting to save meal planner recipe:', newRecipeData);
-            const createResult = await (amplifyClient.models as any).Recipe.create(newRecipeData);
+            const client = getAmplifyClient();
+            const createResult = await client.models.Recipe.create(newRecipeData);
             console.log('Meal planner recipe save result:', createResult);
             
             if (createResult.data) {
               const savedRecipe = createResult.data;
+              console.log('Created recipe with ID:', savedRecipe.id, 'Name:', savedRecipe.name);
+              
               // 2. Add the newly created recipe to the meal plan
-              const success = await addMealPlanEntry(dayDate, meal.type, savedRecipe, 1);
+              const success = await addMealPlanEntry(dayDate, meal.type, savedRecipe as any, 1);
+              console.log('Meal plan entry creation success:', success);
               if (success) {
                 successCount++;
               }
@@ -198,6 +219,15 @@ const MealPlannerScreen: React.FC = () => {
       // Track achievement for successful meal planning
       if (successCount > 0) {
         await incrementStat('meals_planned');
+      }
+
+      // Reload meal plan data to ensure recipes show properly
+      if (successCount > 0) {
+        console.log(`Successfully created ${successCount} recipes, refreshing meal plan data...`);
+        setTimeout(() => {
+          console.log('Calling refreshData() to reload meal plan...');
+          refreshData();
+        }, 500); // Reduced delay
       }
 
       // Show success/failure message

@@ -188,7 +188,8 @@ export default function AddRecipeScreen() {
         return parts.join(' ');
       });
       
-      const recipe = await (amplifyClient.models as any).Recipe.create({
+      const client = getAmplifyClient();
+      const recipe = await client.models.Recipe.create({
         name: title.trim(),
         imageUrl: '', // Will update after image upload
         ingredients: JSON.stringify(formattedIngredients),
@@ -211,7 +212,7 @@ export default function AddRecipeScreen() {
         if (uploadedUrl) {
           finalImageUrl = uploadedUrl;
           // Update recipe with the S3 image URL
-          await (amplifyClient.models as any).Recipe.update({
+          await client.models.Recipe.update({
             id: recipe.data.id,
             imageUrl: finalImageUrl
           });
